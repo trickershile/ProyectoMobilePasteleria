@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Pasteleria, Gustito Sabroson</string>
+    <string name="contact_email">contacto@pasteleria.local</string>
+    <string name="buscar_producto">Buscar producto</string>
+    <string name="buscar_usuario">Buscar usuario</string>
+    <string name="no_productos">No hay productos</string>
+    <string name="no_usuarios">No hay usuarios</string>
+    <string name="no_pagos">No hay pagos</string>
+    <string name="pendientes">Pendientes</string>
+    <string name="aprobados">Aprobados</string>
+    <string name="rechazados">Rechazados</string>
+    <string name="solicitar_envio">Solicitar envío</string>
+    <string name="confirmar_pedido">Confirmar Pedido</string>
+    <string name="confirmar_pedido_btn">Confirmar Pedido</string>
+</resources>
