@@ -1,15 +1,11 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.EjemploPrueba" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/pastel_pink_dark</item>
-        <item name="colorPrimaryVariant">@color/pastel_chocolate_dark</item>
+    <style name="Theme.EjemploPrueba" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/pastel_chocolate_dark</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/pastel_chocolate</item>
-        <item name="colorSecondaryVariant">@color/pastel_chocolate_dark</item>
+        <item name="colorSecondary">@color/pastel_pink_dark</item>
         <item name="colorOnSecondary">@color/white</item>
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:statusBarColor">@color/pastel_chocolate_dark</item>
         <item name="materialButtonStyle">@style/Widget.Gustito.Button</item>
-        <item name="textAppearanceHeadline6">@style/TextAppearance.Gustito.Title</item>
-        <item name="textAppearanceBody1">@style/TextAppearance.Gustito.Body</item>
     </style>
 </resources>

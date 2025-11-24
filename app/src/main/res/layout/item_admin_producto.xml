@@ -71,22 +71,22 @@
             android:orientation="vertical"
             android:gravity="center">
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEditar"
+                style="@style/Widget.Gustito.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Editar"
-                android:textSize="12sp"
-                style="?attr/materialButtonOutlinedStyle" />
+                android:textSize="12sp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEliminar"
+                style="@style/Widget.Gustito.Button.Danger"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Eliminar"
-                android:textSize="12sp"
-                android:backgroundTint="#F44336" />
+                android:textSize="12sp" />
 
         </LinearLayout>
 

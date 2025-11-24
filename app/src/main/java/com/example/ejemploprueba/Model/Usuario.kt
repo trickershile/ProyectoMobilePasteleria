@@ -6,7 +6,8 @@ data class Usuario(
     val nombre: String,
     val email: String,
     val role: String = "Cliente",
-    val bloqueado: Boolean = false
+    val bloqueado: Boolean = false,
+    val activo: Boolean? = null
 )
 
 // Login
@@ -23,8 +24,10 @@ data class RegisterRequest(
 
 data class AuthResponseDTO(
     val token: String,
+    val tipo: String? = null,
     val usuarioId: Int,
     val nombre: String,
+    val apellido: String? = null,
     val email: String,
     val rol: String = "Cliente"
 )
@@ -121,7 +124,7 @@ data class ProductoRequestDTO(
     val descripcion: String,
     val precio: String,
     val categoriaId: Int? = null,
-    val stock: Int? = null
+    val stock: Int? = null 
 )
 data class ProductoUpdateRequestDTO(
     val nombre: String? = null,
@@ -148,6 +151,11 @@ data class UploadImagenResponseDTO(
 
 data class MessageResponseDTO(
     val message: String
+)
+
+data class ErrorResponseDTO(
+    val error: String,
+    val mensaje: String
 )
 
 data class DetallePedidoDTO(

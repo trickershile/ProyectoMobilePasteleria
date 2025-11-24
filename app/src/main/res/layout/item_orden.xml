@@ -95,6 +95,32 @@
 
         </LinearLayout>
 
+        <!-- Actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <Button
+                android:id="@+id/btnCancelar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Cancelar pedido"
+                android:backgroundTint="#F44336" />
+
+            <Button
+                android:id="@+id/btnVerDetalles"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Ver detalles"
+                android:layout_marginStart="8dp"
+                android:backgroundTint="#2196F3" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

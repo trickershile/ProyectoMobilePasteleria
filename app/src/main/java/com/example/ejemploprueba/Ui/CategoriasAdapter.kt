@@ -11,23 +11,25 @@ import com.example.ejemploprueba.databinding.ItemCategoriaBinding
 
 class CategoriasAdapter(
     private val onEdit: (CategoriaResponseDTO) -> Unit,
-    private val onToggle: (CategoriaResponseDTO) -> Unit
+    private val onToggle: (CategoriaResponseDTO) -> Unit,
+    private val onDelete: (CategoriaResponseDTO) -> Unit
 ) : ListAdapter<CategoriaResponseDTO, CategoriasAdapter.ViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         ViewHolder(ItemCategoriaBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) =
-        holder.bind(getItem(position), onEdit, onToggle)
+        holder.bind(getItem(position), onEdit, onToggle, onDelete)
 
     class ViewHolder(private val binding: ItemCategoriaBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(categoria: CategoriaResponseDTO, onEdit: (CategoriaResponseDTO) -> Unit, onToggle: (CategoriaResponseDTO) -> Unit) {
+        fun bind(categoria: CategoriaResponseDTO, onEdit: (CategoriaResponseDTO) -> Unit, onToggle: (CategoriaResponseDTO) -> Unit, onDelete: (CategoriaResponseDTO) -> Unit) {
             binding.tvNombre.text = categoria.nombre
             binding.tvEstado.text = if (categoria.activa) "Activa" else "Inactiva"
             binding.tvEstado.setTextColor(if (categoria.activa) 0xFF4CAF50.toInt() else 0xFFF44336.toInt())
             binding.btnEditar.setOnClickListener { onEdit(categoria) }
             binding.btnToggle.text = if (categoria.activa) "Desactivar" else "Activar"
             binding.btnToggle.setOnClickListener { onToggle(categoria) }
+            binding.btnEliminar.setOnClickListener { onDelete(categoria) }
         }
     }
 

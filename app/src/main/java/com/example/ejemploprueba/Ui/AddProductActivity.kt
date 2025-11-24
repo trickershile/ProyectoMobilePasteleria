@@ -89,8 +89,8 @@ class AddProductActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            if (stockInicial == null || stockInicial < 0) {
-                Toast.makeText(this, "Stock inicial inválido", Toast.LENGTH_SHORT).show()
+            if (stockInicial == null || stockInicial <= 0) {
+                Toast.makeText(this, "Stock inicial debe ser mayor a 0", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -148,10 +148,11 @@ class AddProductActivity : AppCompatActivity() {
                         imagen = imagePart
                     )
                 } else {
+                        val precioNormalized = precio.replace(',', '.')
                         val body = ProductoRequestDTO(
                             nombre = nombre,
                             descripcion = descripcion,
-                            precio = precio,
+                            precio = precioNormalized,
                             categoriaId = categoriaId,
                             stock = stockInicial
                         )
@@ -188,6 +189,8 @@ class AddProductActivity : AppCompatActivity() {
                             }
                             Toast.makeText(this@AddProductActivity, "Producto e inventario guardados", Toast.LENGTH_SHORT).show()
                         } else {
+                            val invErr = com.example.ejemploprueba.API.parseApiError(invResp.errorBody())
+                            val invMsg = invErr?.mensaje ?: "Error al crear inventario"
                             val delResp = withContext(Dispatchers.IO) {
                                 RetrofitClient.instance.eliminarProducto(
                                     token = "Bearer $token",
@@ -195,9 +198,11 @@ class AddProductActivity : AppCompatActivity() {
                                 )
                             }
                             if (delResp.isSuccessful) {
-                                Toast.makeText(this@AddProductActivity, "Error al crear inventario, producto revertido", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@AddProductActivity, "$invMsg, producto revertido", Toast.LENGTH_SHORT).show()
                             } else {
-                                Toast.makeText(this@AddProductActivity, "Error al crear inventario y al revertir producto", Toast.LENGTH_SHORT).show()
+                                val delErr = com.example.ejemploprueba.API.parseApiError(delResp.errorBody())
+                                val delMsg = delErr?.mensaje ?: "Error al revertir producto"
+                                Toast.makeText(this@AddProductActivity, "$invMsg y $delMsg", Toast.LENGTH_SHORT).show()
                             }
                         }
                     } else {
@@ -205,7 +210,9 @@ class AddProductActivity : AppCompatActivity() {
                     }
                     finish()
                 } else {
-                    Toast.makeText(this@AddProductActivity, "Error al guardar", Toast.LENGTH_SHORT).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al guardar"
+                    Toast.makeText(this@AddProductActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@AddProductActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()

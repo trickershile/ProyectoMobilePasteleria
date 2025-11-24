@@ -14,10 +14,13 @@ object RetrofitClient {
     val instance: PasteleriaApi by lazy {
         val authInterceptor = Interceptor { chain ->
             val t = TokenStore.token
-            val req = chain.request().newBuilder().apply {
-                if (t != null) addHeader("Authorization", "Bearer $t")
-            }.build()
-            chain.proceed(req)
+            val original = chain.request()
+            val hasAuth = original.header("Authorization") != null
+            val builder = original.newBuilder()
+            if (!hasAuth && t != null) {
+                builder.addHeader("Authorization", "Bearer $t")
+            }
+            chain.proceed(builder.build())
         }
 
         val logging = HttpLoggingInterceptor().apply {
@@ -40,4 +43,11 @@ object RetrofitClient {
             .build()
             .create(PasteleriaApi::class.java)
     }
+}
+
+fun parseApiError(body: okhttp3.ResponseBody?): com.example.ejemploprueba.Model.ErrorResponseDTO? {
+    return try {
+        val s = body?.string() ?: return null
+        com.google.gson.Gson().fromJson(s, com.example.ejemploprueba.Model.ErrorResponseDTO::class.java)
+    } catch (_: Exception) { null }
 }

@@ -28,17 +28,23 @@ class UsuariosAdapter(
             binding.tvRole.text = usuario.role
 
             // Estado de bloqueo
-            if (usuario.bloqueado) {
+            val btnActivar = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.example.ejemploprueba.R.id.btnActivar)
+            val btnDesactivar = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.example.ejemploprueba.R.id.btnDesactivar)
+            val isBlocked = usuario.activo?.let { !it } ?: usuario.bloqueado
+            if (isBlocked) {
                 binding.tvEstado.text = "Inactivo"
                 binding.tvEstado.setTextColor(0xFFF44336.toInt())
-                binding.btnBloquear.text = "Activar"
+                btnActivar.visibility = android.view.View.VISIBLE
+                btnDesactivar.visibility = android.view.View.GONE
             } else {
                 binding.tvEstado.text = "Activo"
                 binding.tvEstado.setTextColor(0xFF4CAF50.toInt())
-                binding.btnBloquear.text = "Desactivar"
+                btnActivar.visibility = android.view.View.GONE
+                btnDesactivar.visibility = android.view.View.VISIBLE
             }
 
-            binding.btnBloquear.setOnClickListener { onBlock(usuario) }
+            btnActivar.setOnClickListener { onBlock(usuario) }
+            btnDesactivar.setOnClickListener { onBlock(usuario) }
 
             val esCliente = usuario.role.equals("Cliente", true)
             binding.btnCrearCliente.visibility = if (esCliente) android.view.View.VISIBLE else android.view.View.GONE

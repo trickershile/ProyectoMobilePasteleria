@@ -8,19 +8,22 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.ejemploprueba.Model.PedidoDTO
 import com.example.ejemploprueba.databinding.ItemOrdenBinding
 
-class OrdenesAdapter : ListAdapter<PedidoDTO, OrdenesAdapter.ViewHolder>(DiffCallback()) {
+class OrdenesAdapter(
+    private val onCancelar: (PedidoDTO) -> Unit,
+    private val onVer: (PedidoDTO) -> Unit
+) : ListAdapter<PedidoDTO, OrdenesAdapter.ViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         ViewHolder(ItemOrdenBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) =
-        holder.bind(getItem(position))
+        holder.bind(getItem(position), onCancelar, onVer)
 
     class ViewHolder(private val binding: ItemOrdenBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(orden: PedidoDTO) {
+        fun bind(orden: PedidoDTO, onCancelar: (PedidoDTO) -> Unit, onVer: (PedidoDTO) -> Unit) {
             binding.tvOrdenId.text = "Pedido #${orden.id}"
             binding.tvFecha.text = orden.fecha
-            binding.tvTotal.text = "$${orden.total}"
+            binding.tvTotal.text = "${orden.total}"
             binding.tvEstado.text = orden.estado
             binding.tvDireccion.visibility = android.view.View.GONE
 
@@ -43,6 +46,14 @@ class OrdenesAdapter : ListAdapter<PedidoDTO, OrdenesAdapter.ViewHolder>(DiffCal
                     binding.tvEstado.setTextColor(0xFFF44336.toInt())
                 }
             }
+
+            val esCancelable = orden.estado.equals("Pendiente", true)
+            val btnCancelar = binding.root.findViewById<android.widget.Button>(com.example.ejemploprueba.R.id.btnCancelar)
+            btnCancelar.visibility = if (esCancelable) android.view.View.VISIBLE else android.view.View.GONE
+            btnCancelar.setOnClickListener { onCancelar(orden) }
+
+            val btnVer = binding.root.findViewById<android.widget.Button>(com.example.ejemploprueba.R.id.btnVerDetalles)
+            btnVer.setOnClickListener { onVer(orden) }
         }
     }
 

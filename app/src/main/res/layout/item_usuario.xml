@@ -64,37 +64,52 @@
 
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnBloquear"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Desactivar"
-            android:backgroundTint="#F44336" />
+            android:orientation="horizontal">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnActivar"
+                style="@style/Widget.Gustito.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Activar"
+                android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDesactivar"
+                style="@style/Widget.Gustito.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Desactivar"
+                android:visibility="gone" />
+        </LinearLayout>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCrearCliente"
+            style="@style/Widget.Gustito.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Crear Cliente"
-            android:backgroundTint="#2196F3" />
+            android:text="Crear Cliente" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEditar"
+            style="@style/Widget.Gustito.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Editar"
-            android:backgroundTint="#4CAF50" />
+            android:text="Editar" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEliminar"
+            style="@style/Widget.Gustito.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Eliminar"
-            android:backgroundTint="#F44336" />
+            android:text="Eliminar" />
 
     </LinearLayout>
 

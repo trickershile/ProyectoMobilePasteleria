@@ -4,9 +4,24 @@
     <color name="pastel_pink_dark">#E57399</color>
     <color name="pastel_crema">#FFF8E1</color>
     <color name="pastel_celeste">#B3E5FC</color>
+    <color name="pastel_lavender">#E6E1FF</color>
+    <color name="pastel_beige">#F5EDE0</color>
+    <color name="accent_coral">#FF8A80</color>
+    <color name="accent_rose_gold">#B76E79</color>
     <color name="pastel_chocolate">#8D6E63</color>
-    <color name="pastel_chocolate_dark">#6D4C41</color>
+    <color name="pastel_chocolate_dark">#5D4037</color>
     <color name="pastel_yellow">#FFF59D</color>
+    <color name="cream_white">#FFFDF8</color>
+
+    <!-- Material 3 surface colors -->
+    <color name="m3_surface">#FFFBFE</color>
+    <color name="m3_on_surface">#1C1B1F</color>
+    <color name="m3_surface_variant">#E7E0EC</color>
+    <color name="m3_on_surface_variant">#49454F</color>
+
+    <!-- Gradients -->
+    <color name="gradient_start">#FFE3EC</color>
+    <color name="gradient_end">#FFD7BA</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

@@ -62,7 +62,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="#F5F5F5"
+        android:background="@color/m3_surface"
         android:elevation="8dp">
 
         <LinearLayout
@@ -92,21 +92,18 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPagar"
+            style="@style/Widget.Gustito.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Proceder al Pago"
-            android:textSize="16sp"
-            android:backgroundTint="@color/pastel_chocolate"
-            android:textColor="@color/white" />
+            android:text="Proceder al Pago" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnVaciar"
+            style="@style/Widget.Gustito.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Vaciar Carrito"
-            android:backgroundTint="#F44336"
-            android:textColor="@color/white" />
+            android:layout_marginTop="12dp"
+            android:text="Vaciar Carrito" />
 
     </LinearLayout>
 

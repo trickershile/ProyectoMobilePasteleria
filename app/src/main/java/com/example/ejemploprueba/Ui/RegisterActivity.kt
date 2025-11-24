@@ -77,10 +77,22 @@ class RegisterActivity : AppCompatActivity() {
                         userEmail = auth.email,
                         userRole = auth.rol
                     )
+                    if (auth.rol.equals("Cliente", true)) {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                RetrofitClient.instance.crearClienteParaUsuarioAdmin(
+                                    token = "Bearer ${auth.token}",
+                                    usuarioId = auth.usuarioId
+                                )
+                            }
+                        } catch (_: Exception) {}
+                    }
                     Toast.makeText(this@RegisterActivity, "Cuenta creada", Toast.LENGTH_SHORT).show()
                     navigateToMain()
                 } else {
-                    Toast.makeText(this@RegisterActivity, "Error al registrar", Toast.LENGTH_LONG).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al registrar"
+                    Toast.makeText(this@RegisterActivity, msg, Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@RegisterActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()

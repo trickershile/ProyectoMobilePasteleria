@@ -8,13 +8,16 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.ejemploprueba.API.RetrofitClient
 import com.example.ejemploprueba.Model.CarritoAgregarRequest
+import com.example.ejemploprueba.Model.CarritoItem
 import com.example.ejemploprueba.databinding.ActivityProductDetailBinding
 import com.example.ejemploprueba.utils.SessionManager
+import com.example.ejemploprueba.utils.CarritoManager
 import kotlinx.coroutines.launch
 
 class ProductDetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProductDetailBinding
     private lateinit var sessionManager: SessionManager
+    private lateinit var carritoManager: CarritoManager
     private var productoId: Int = 0
     private var cantidad: Int = 1
 
@@ -24,6 +27,7 @@ class ProductDetailActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sessionManager = SessionManager(this)
+        carritoManager = CarritoManager(this)
 
         productoId = intent.getIntExtra("producto_id", 0)
         val nombre = intent.getStringExtra("nombre") ?: ""
@@ -80,11 +84,38 @@ class ProductDetailActivity : AppCompatActivity() {
                         .setAction("Ver") { startActivity(android.content.Intent(this@ProductDetailActivity, CarritoActivity::class.java)) }
                         .show()
                 } else {
-                    val err = response.errorBody()?.string()
-                    Toast.makeText(this@ProductDetailActivity, err ?: "No se pudo agregar", Toast.LENGTH_SHORT).show()
+                    val nombre = binding.tvName.text.toString()
+                    val precio = binding.tvPrice.text.toString().replace("$", "")
+                    val imagen = (intent.getStringExtra("imagen") ?: "")
+                    val item = CarritoItem(
+                        detalleId = productoId,
+                        productoId = productoId,
+                        nombre = nombre,
+                        precio = precio,
+                        cantidad = cantidad,
+                        imagen = imagen
+                    )
+                    carritoManager.agregarProducto(item)
+                    com.google.android.material.snackbar.Snackbar.make(binding.root, "Agregado", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                        .setAction("Ver") { startActivity(android.content.Intent(this@ProductDetailActivity, CarritoActivity::class.java)) }
+                        .show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@ProductDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                val nombre = binding.tvName.text.toString()
+                val precio = binding.tvPrice.text.toString().replace("$", "")
+                val imagen = (intent.getStringExtra("imagen") ?: "")
+                val item = CarritoItem(
+                    detalleId = productoId,
+                    productoId = productoId,
+                    nombre = nombre,
+                    precio = precio,
+                    cantidad = cantidad,
+                    imagen = imagen
+                )
+                carritoManager.agregarProducto(item)
+                com.google.android.material.snackbar.Snackbar.make(binding.root, "Agregado", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                    .setAction("Ver") { startActivity(android.content.Intent(this@ProductDetailActivity, CarritoActivity::class.java)) }
+                    .show()
             } finally {
                 showLoading(false)
             }

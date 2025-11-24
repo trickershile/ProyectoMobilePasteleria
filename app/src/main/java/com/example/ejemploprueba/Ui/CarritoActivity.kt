@@ -13,6 +13,7 @@ import com.example.ejemploprueba.Model.CarritoDTO
 import com.example.ejemploprueba.Model.CarritoItem
 import com.example.ejemploprueba.databinding.ActivityCarritoBinding
 import com.example.ejemploprueba.utils.SessionManager
+import com.example.ejemploprueba.utils.CarritoManager
 import kotlinx.coroutines.launch
 
 class CarritoActivity : AppCompatActivity() {
@@ -20,6 +21,8 @@ class CarritoActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private lateinit var adapter: CarritoAdapter
     private var carritoActual: CarritoDTO? = null
+    private lateinit var carritoManager: CarritoManager
+    private var isLocalCart: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +30,7 @@ class CarritoActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sessionManager = SessionManager(this)
+        carritoManager = CarritoManager(this)
 
         setSupportActionBar(binding.toolbar)
         val toggle = ActionBarDrawerToggle(
@@ -44,8 +48,15 @@ class CarritoActivity : AppCompatActivity() {
         cargarCarrito()
 
         binding.btnPagar.setOnClickListener {
-            if (carritoActual?.items?.isNotEmpty() == true) {
-                startActivity(Intent(this, PagoActivity::class.java))
+            if (isLocalCart) {
+                val items = carritoManager.getItems()
+                if (items.isNotEmpty()) {
+                    Toast.makeText(this, "Para pagar necesitas un perfil de cliente activo.", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                if (carritoActual?.items?.isNotEmpty() == true) {
+                    startActivity(Intent(this, PagoActivity::class.java))
+                }
             }
         }
 
@@ -130,17 +141,24 @@ class CarritoActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                val response = RetrofitClient.instance.getCarrito("Bearer $token")
-                if (response.isSuccessful && response.body() != null) {
+                val response = if (token.isNotBlank()) RetrofitClient.instance.getCarrito("Bearer $token") else null
+                if (response != null && response.isSuccessful && response.body() != null) {
+                    isLocalCart = false
                     carritoActual = response.body()
                     val items = carritoActual?.items ?: emptyList()
                     val total = carritoActual?.total ?: "$0.00"
                     renderCarrito(items, total)
                 } else {
-                    renderCarrito(emptyList(), "$0.00")
+                    isLocalCart = true
+                    val items = carritoManager.getItems()
+                    val total = String.format("$%.2f", carritoManager.getTotal())
+                    renderCarrito(items, total)
                 }
             } catch (e: Exception) {
-                renderCarrito(emptyList(), "$0.00")
+                isLocalCart = true
+                val items = carritoManager.getItems()
+                val total = String.format("$%.2f", carritoManager.getTotal())
+                renderCarrito(items, total)
             } finally {
                 showLoading(false)
             }
@@ -151,15 +169,22 @@ class CarritoActivity : AppCompatActivity() {
         showLoading(true)
         lifecycleScope.launch {
             try {
-                val token = sessionManager.getToken() ?: ""
-                val response = RetrofitClient.instance.actualizarCantidadCarrito(
-                    token = "Bearer $token",
-                    detalleId = detalleId,
-                    body = mapOf("cantidad" to cantidad)
-                )
-                if (response.isSuccessful && response.body() != null) {
-                    carritoActual = response.body()
-                    renderCarrito(carritoActual?.items ?: emptyList(), carritoActual?.total ?: "$0.00")
+                if (isLocalCart) {
+                    carritoManager.actualizarCantidad(detalleId, cantidad)
+                    val items = carritoManager.getItems()
+                    val total = String.format("$%.2f", carritoManager.getTotal())
+                    renderCarrito(items, total)
+                } else {
+                    val token = sessionManager.getToken() ?: ""
+                    val response = RetrofitClient.instance.actualizarCantidadCarrito(
+                        token = "Bearer $token",
+                        detalleId = detalleId,
+                        body = mapOf("cantidad" to cantidad)
+                    )
+                    if (response.isSuccessful && response.body() != null) {
+                        carritoActual = response.body()
+                        renderCarrito(carritoActual?.items ?: emptyList(), carritoActual?.total ?: "$0.00")
+                    }
                 }
             } finally {
                 showLoading(false)
@@ -171,15 +196,23 @@ class CarritoActivity : AppCompatActivity() {
         showLoading(true)
         lifecycleScope.launch {
             try {
-                val token = sessionManager.getToken() ?: ""
-                val response = RetrofitClient.instance.eliminarDetalleCarrito(
-                    token = "Bearer $token",
-                    detalleId = detalleId
-                )
-                if (response.isSuccessful && response.body() != null) {
-                    carritoActual = response.body()
-                    renderCarrito(carritoActual?.items ?: emptyList(), carritoActual?.total ?: "$0.00")
+                if (isLocalCart) {
+                    carritoManager.eliminarProducto(detalleId)
+                    val items = carritoManager.getItems()
+                    val total = String.format("$%.2f", carritoManager.getTotal())
+                    renderCarrito(items, total)
                     Toast.makeText(this@CarritoActivity, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                } else {
+                    val token = sessionManager.getToken() ?: ""
+                    val response = RetrofitClient.instance.eliminarDetalleCarrito(
+                        token = "Bearer $token",
+                        detalleId = detalleId
+                    )
+                    if (response.isSuccessful && response.body() != null) {
+                        carritoActual = response.body()
+                        renderCarrito(carritoActual?.items ?: emptyList(), carritoActual?.total ?: "$0.00")
+                        Toast.makeText(this@CarritoActivity, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } finally {
                 showLoading(false)
@@ -191,12 +224,18 @@ class CarritoActivity : AppCompatActivity() {
         showLoading(true)
         lifecycleScope.launch {
             try {
-                val token = sessionManager.getToken() ?: ""
-                val response = RetrofitClient.instance.vaciarCarrito("Bearer $token")
-                if (response.isSuccessful) {
-                    carritoActual = CarritoDTO(0, emptyList(), "$0.00")
+                if (isLocalCart) {
+                    carritoManager.limpiar()
                     renderCarrito(emptyList(), "$0.00")
                     Toast.makeText(this@CarritoActivity, "Carrito vaciado", Toast.LENGTH_SHORT).show()
+                } else {
+                    val token = sessionManager.getToken() ?: ""
+                    val response = RetrofitClient.instance.vaciarCarrito("Bearer $token")
+                    if (response.isSuccessful) {
+                        carritoActual = CarritoDTO(0, emptyList(), "$0.00")
+                        renderCarrito(emptyList(), "$0.00")
+                        Toast.makeText(this@CarritoActivity, "Carrito vaciado", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } finally {
                 showLoading(false)

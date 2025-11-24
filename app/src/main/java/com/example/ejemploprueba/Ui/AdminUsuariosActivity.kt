@@ -73,6 +73,17 @@ class AdminUsuariosActivity : AppCompatActivity() {
         binding.drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
         setupDrawerMenu()
+
+        val menu = binding.toolbar.menu
+        val ID_VER_CLIENTES = 9101
+        val item = menu.add(android.view.Menu.NONE, ID_VER_CLIENTES, android.view.Menu.NONE, "Ver clientes")
+        item.setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER)
+        binding.toolbar.setOnMenuItemClickListener { i ->
+            when (i.itemId) {
+                ID_VER_CLIENTES -> { mostrarClientes(); true }
+                else -> false
+            }
+        }
     }
 
     private fun setupDrawerMenu() {
@@ -147,7 +158,8 @@ class AdminUsuariosActivity : AppCompatActivity() {
     }
 
     private fun confirmarActivacion(usuario: Usuario) {
-        val accion = if (usuario.bloqueado) "activar" else "desactivar"
+        val bloqueadoActual = usuario.activo?.let { !it } ?: usuario.bloqueado
+        val accion = if (bloqueadoActual) "activar" else "desactivar"
 
         AlertDialog.Builder(this)
             .setTitle("${accion.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} Usuario")
@@ -165,7 +177,8 @@ class AdminUsuariosActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                val response = if (usuario.bloqueado) {
+                val bloqueadoActual = usuario.activo?.let { !it } ?: usuario.bloqueado
+                val response = if (bloqueadoActual) {
                     RetrofitClient.instance.activarUsuarioAdmin(
                         token = "Bearer $token",
                         usuarioId = usuario.id
@@ -178,7 +191,7 @@ class AdminUsuariosActivity : AppCompatActivity() {
                 }
 
                 if (response.isSuccessful) {
-                    val accion = if (usuario.bloqueado) "activado" else "desactivado"
+                    val accion = if (bloqueadoActual) "activado" else "desactivado"
                     Toast.makeText(
                         this@AdminUsuariosActivity,
                         "Usuario $accion",
@@ -206,6 +219,72 @@ class AdminUsuariosActivity : AppCompatActivity() {
 
     private fun showLoading(loading: Boolean) {
         binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+    }
+
+    private fun mostrarClientes() {
+        showLoading(true)
+        lifecycleScope.launch {
+            try {
+                val token = sessionManager.getToken() ?: ""
+                val resp = withContext(Dispatchers.IO) { RetrofitClient.instance.getClientesAdminTodos("Bearer $token") }
+                if (resp.isSuccessful) {
+                    val clientes = resp.body() ?: emptyList()
+                    val nombres = clientes.map { "#${it.id} · ${it.nombre} · ${it.email}" }
+                    val adapter = android.widget.ArrayAdapter(this@AdminUsuariosActivity, android.R.layout.simple_list_item_1, nombres)
+                    val list = android.widget.ListView(this@AdminUsuariosActivity).apply { this.adapter = adapter }
+                    androidx.appcompat.app.AlertDialog.Builder(this@AdminUsuariosActivity)
+                        .setTitle("Clientes")
+                        .setView(list)
+                        .setPositiveButton("Ver por ID") { _, _ -> mostrarDialogoClientePorId() }
+                        .setNegativeButton("Cerrar", null)
+                        .show()
+                } else {
+                    val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al cargar clientes"
+                    Toast.makeText(this@AdminUsuariosActivity, msg, Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                showLoading(false)
+            }
+        }
+    }
+
+    private fun mostrarDialogoClientePorId() {
+        val input = android.widget.EditText(this).apply { hint = "Cliente ID"; inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Buscar cliente por ID")
+            .setView(input)
+            .setPositiveButton("Buscar") { _, _ ->
+                val id = input.text.toString().toIntOrNull() ?: 0
+                if (id > 0) obtenerClientePorId(id)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun obtenerClientePorId(id: Int) {
+        showLoading(true)
+        lifecycleScope.launch {
+            try {
+                val token = sessionManager.getToken() ?: ""
+                val resp = withContext(Dispatchers.IO) { RetrofitClient.instance.getClientePorIdAdmin("Bearer $token", id) }
+                if (resp.isSuccessful && resp.body() != null) {
+                    val c = resp.body()!!
+                    val detalle = "ID: ${c.id}\nNombre: ${c.nombre}\nEmail: ${c.email}\nTeléfono: ${c.telefono ?: "-"}\nDirección: ${c.direccion ?: "-"}"
+                    androidx.appcompat.app.AlertDialog.Builder(this@AdminUsuariosActivity)
+                        .setTitle("Cliente #${c.id}")
+                        .setMessage(detalle)
+                        .setPositiveButton("Cerrar", null)
+                        .show()
+                } else {
+                    val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
+                    val msg = parsed?.mensaje ?: "No encontrado"
+                    Toast.makeText(this@AdminUsuariosActivity, msg, Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                showLoading(false)
+            }
+        }
     }
 
     private fun mostrarDialogoCrear() {
@@ -266,14 +345,15 @@ class AdminUsuariosActivity : AppCompatActivity() {
                 if (nombre.isEmpty() || email.isEmpty()) {
                     android.widget.Toast.makeText(this, "Completa nombre y email", android.widget.Toast.LENGTH_SHORT).show()
                 } else {
-                    editarUsuario(usuario.id, nombre, email, role)
+                    val bloqueadoActual = usuario.activo?.let { !it } ?: usuario.bloqueado
+                    editarUsuario(usuario.id, nombre, email, role, bloqueadoActual)
                 }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun editarUsuario(id: Int, nombre: String, email: String, role: String) {
+    private fun editarUsuario(id: Int, nombre: String, email: String, role: String, bloqueado: Boolean) {
         showLoading(true)
         lifecycleScope.launch {
             try {
@@ -282,15 +362,16 @@ class AdminUsuariosActivity : AppCompatActivity() {
                     RetrofitClient.instance.actualizarUsuarioAdmin(
                         token = "Bearer $token",
                         usuarioId = id,
-                        usuario = Usuario(id = id, nombre = nombre, email = email, role = role, bloqueado = false)
+                        usuario = Usuario(id = id, nombre = nombre, email = email, role = role, bloqueado = bloqueado, activo = !bloqueado)
                     )
                 }
                 if (resp.isSuccessful) {
                     android.widget.Toast.makeText(this@AdminUsuariosActivity, "Usuario actualizado", android.widget.Toast.LENGTH_SHORT).show()
                     cargarUsuarios()
                 } else {
-                    val err = resp.errorBody()?.string()?.take(200)
-                    android.widget.Toast.makeText(this@AdminUsuariosActivity, err ?: "Error al actualizar", android.widget.Toast.LENGTH_SHORT).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al actualizar"
+                    android.widget.Toast.makeText(this@AdminUsuariosActivity, msg, android.widget.Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 android.widget.Toast.makeText(this@AdminUsuariosActivity, "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
@@ -324,8 +405,27 @@ class AdminUsuariosActivity : AppCompatActivity() {
                     android.widget.Toast.makeText(this@AdminUsuariosActivity, "Usuario eliminado", android.widget.Toast.LENGTH_SHORT).show()
                     cargarUsuarios()
                 } else {
-                    val err = resp.errorBody()?.string()?.take(200)
-                    android.widget.Toast.makeText(this@AdminUsuariosActivity, err ?: "No se pudo eliminar", android.widget.Toast.LENGTH_SHORT).show()
+                    val code = resp.code()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
+                    val msg = parsed?.mensaje ?: "No se pudo eliminar"
+                    if (code == 409 || (msg.contains("relacion", true) || msg.contains("vincul", true))) {
+                        val desResp = withContext(Dispatchers.IO) {
+                            RetrofitClient.instance.desactivarUsuarioAdmin(
+                                token = "Bearer $token",
+                                usuarioId = id
+                            )
+                        }
+                        if (desResp.isSuccessful) {
+                            android.widget.Toast.makeText(this@AdminUsuariosActivity, "Usuario desactivado (no se pudo eliminar)", android.widget.Toast.LENGTH_SHORT).show()
+                            cargarUsuarios()
+                        } else {
+                            val p2 = com.example.ejemploprueba.API.parseApiError(desResp.errorBody())
+                            val m2 = p2?.mensaje ?: msg
+                            android.widget.Toast.makeText(this@AdminUsuariosActivity, m2, android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        android.widget.Toast.makeText(this@AdminUsuariosActivity, msg, android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 android.widget.Toast.makeText(this@AdminUsuariosActivity, "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
@@ -341,12 +441,12 @@ class AdminUsuariosActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                val resp = withContext(Dispatchers.IO) {
-                    RetrofitClient.instance.crearUsuarioAdmin(
-                        token = "Bearer $token",
-                        usuario = Usuario(id = 0, nombre = nombre, email = email, role = role, bloqueado = false)
-                    )
-                }
+                    val resp = withContext(Dispatchers.IO) {
+                        RetrofitClient.instance.crearUsuarioAdmin(
+                            token = "Bearer $token",
+                            usuario = Usuario(id = 0, nombre = nombre, email = email, role = role, bloqueado = false, activo = true)
+                        )
+                    }
                 if (resp.isSuccessful) {
                     val creado = resp.body()
                     if (creado != null && role.equals("Cliente", true)) {
@@ -366,8 +466,9 @@ class AdminUsuariosActivity : AppCompatActivity() {
                     }
                     cargarUsuarios()
                 } else {
-                    val err = resp.errorBody()?.string()?.take(200)
-                    Toast.makeText(this@AdminUsuariosActivity, err ?: "Error al crear", Toast.LENGTH_SHORT).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al crear"
+                    Toast.makeText(this@AdminUsuariosActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@AdminUsuariosActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()

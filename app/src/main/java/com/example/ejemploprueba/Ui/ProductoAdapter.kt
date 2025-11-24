@@ -1,12 +1,17 @@
 package com.example.ejemploprueba.Ui
 
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.example.ejemploprueba.Model.Producto
 import com.example.ejemploprueba.databinding.ItemProductBinding
 
@@ -26,13 +31,32 @@ class ProductoAdapter(
         fun bind(producto: Producto, onClick: (Producto) -> Unit, onAddCart: ((Producto, android.view.View) -> Unit)?) {
             binding.tvProductName.text = producto.nombre
             binding.tvProductPrice.text = "$${producto.precio}"
-
+            try { binding.shimmerContainer.startShimmer() } catch (_: Exception) {}
             Glide.with(itemView.context)
                 .load(producto.imagen)
-                .placeholder(android.R.drawable.ic_menu_report_image)
-                .error(android.R.drawable.ic_delete)
                 .centerCrop()
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                .listener(object : RequestListener<android.graphics.drawable.Drawable> {
+                    override fun onLoadFailed(
+                        e: GlideException?,
+                        model: Any?,
+                        target: Target<Drawable>,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        try { binding.shimmerContainer.stopShimmer(); binding.shimmerContainer.visibility = android.view.View.GONE } catch (_: Exception) {}
+                        return false
+                    }
+                    override fun onResourceReady(
+                        resource: Drawable,
+                        model: Any,
+                        target: Target<Drawable>,
+                        dataSource: DataSource,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        try { binding.shimmerContainer.stopShimmer(); binding.shimmerContainer.visibility = android.view.View.GONE } catch (_: Exception) {}
+                        return false
+                    }
+                })
                 .into(binding.ivProductImage)
 
             binding.tvBadge.visibility = if (topIds.contains(producto.id)) android.view.View.VISIBLE else android.view.View.GONE

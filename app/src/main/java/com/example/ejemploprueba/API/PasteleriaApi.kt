@@ -14,7 +14,7 @@ interface PasteleriaApi {
     @GET("/api/usuarios/admin/todos")
     suspend fun getUsuariosAdminTodos(@Header("Authorization") token: String): Response<List<Usuario>>
 
-    @POST("/api/usuarios/admin")
+    @POST("/api/usuarios/admin/crear")
     suspend fun crearUsuarioAdmin(
         @Header("Authorization") token: String,
         @Body usuario: Usuario
@@ -113,6 +113,18 @@ interface PasteleriaApi {
     @GET("/api/pedidos/mis-pedidos")
     suspend fun getMisPedidos(@Header("Authorization") token: String): Response<List<PedidoDTO>>
 
+    @GET("/api/pedidos/{pedidoId}")
+    suspend fun getPedidoPorId(
+        @Header("Authorization") token: String,
+        @Path("pedidoId") pedidoId: Int
+    ): Response<PedidoDTO>
+
+    @DELETE("/api/pedidos/{pedidoId}/cancelar")
+    suspend fun cancelarPedido(
+        @Header("Authorization") token: String,
+        @Path("pedidoId") pedidoId: Int
+    ): Response<Unit>
+
     @GET("/api/pedidos/admin/todos")
     suspend fun getPedidosAdminTodos(@Header("Authorization") token: String): Response<List<PedidoDTO>>
 
@@ -177,9 +189,22 @@ interface PasteleriaApi {
         @Query("size") size: Int
     ): Response<PageDTO<ProductoResponseDTO>>
 
+    @GET("/api/productos/page")
+    suspend fun getProductosPage(
+        @Query("page") page: Int,
+        @Query("size") size: Int
+    ): Response<PageDTO<ProductoResponseDTO>>
+
     @GET("/api/productos/buscar")
     suspend fun buscarProductos(
         @Query("nombre") nombre: String,
+        @Query("page") page: Int,
+        @Query("size") size: Int
+    ): Response<PageDTO<ProductoResponseDTO>>
+
+    @GET("/api/productos/disponibles/categoria/{categoriaId}/page")
+    suspend fun getProductosDisponiblesPorCategoriaPage(
+        @Path("categoriaId") categoriaId: Int,
         @Query("page") page: Int,
         @Query("size") size: Int
     ): Response<PageDTO<ProductoResponseDTO>>

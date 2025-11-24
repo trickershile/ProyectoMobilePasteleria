@@ -28,7 +28,10 @@ class MisOrdenesActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        adapter = OrdenesAdapter()
+        adapter = OrdenesAdapter(
+            onCancelar = { orden -> confirmarCancelar(orden) },
+            onVer = { orden -> verDetalles(orden) }
+        )
         binding.rvOrdenes.apply {
             adapter = this@MisOrdenesActivity.adapter
             layoutManager = LinearLayoutManager(this@MisOrdenesActivity)
@@ -77,5 +80,65 @@ class MisOrdenesActivity : AppCompatActivity() {
 
     private fun showLoading(loading: Boolean) {
         binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+    }
+
+    private fun confirmarCancelar(orden: com.example.ejemploprueba.Model.PedidoDTO) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Cancelar pedido")
+            .setMessage("¿Deseas cancelar el pedido #${orden.id}?")
+            .setPositiveButton("Cancelar") { _, _ -> cancelarPedido(orden.id) }
+            .setNegativeButton("Mantener", null)
+            .show()
+    }
+
+    private fun cancelarPedido(pedidoId: Int) {
+        showLoading(true)
+        lifecycleScope.launch {
+            try {
+                val token = sessionManager.getToken() ?: ""
+                val resp = RetrofitClient.instance.cancelarPedido("Bearer $token", pedidoId)
+                if (resp.isSuccessful) {
+                    Toast.makeText(this@MisOrdenesActivity, "Pedido cancelado", Toast.LENGTH_SHORT).show()
+                    cargarOrdenes()
+                } else {
+                    val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
+                    val msg = parsed?.mensaje ?: "No se pudo cancelar"
+                    Toast.makeText(this@MisOrdenesActivity, msg, Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                showLoading(false)
+            }
+        }
+    }
+
+    private fun verDetalles(orden: com.example.ejemploprueba.Model.PedidoDTO) {
+        showLoading(true)
+        lifecycleScope.launch {
+            try {
+                val token = sessionManager.getToken() ?: ""
+                val respDetalles = RetrofitClient.instance.getDetallesPorPedido("Bearer $token", orden.id)
+                if (respDetalles.isSuccessful) {
+                    val items = respDetalles.body() ?: emptyList()
+                    val texto = if (items.isEmpty()) {
+                        "Sin ítems"
+                    } else {
+                        items.joinToString("\n") { d ->
+                            "x${d.cantidad} · Producto ${d.productoId} · ${d.precioUnitario} = ${d.total}"
+                        }
+                    }
+                    androidx.appcompat.app.AlertDialog.Builder(this@MisOrdenesActivity)
+                        .setTitle("Pedido #${orden.id}")
+                        .setMessage(texto)
+                        .setPositiveButton("Cerrar", null)
+                        .show()
+                } else {
+                    val parsed = com.example.ejemploprueba.API.parseApiError(respDetalles.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al cargar detalles"
+                    Toast.makeText(this@MisOrdenesActivity, msg, Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                showLoading(false)
+            }
+        }
     }
 }

@@ -17,14 +17,32 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <ImageView
-            android:id="@+id/ivProductImage"
+        <FrameLayout
+            android:id="@+id/imageContainer"
             android:layout_width="100dp"
             android:layout_height="100dp"
-            android:scaleType="centerCrop"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:src="@tools:sample/avatars" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.facebook.shimmer.ShimmerFrameLayout
+                android:id="@+id/shimmerContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="visible">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:background="@color/pastel_beige" />
+            </com.facebook.shimmer.ShimmerFrameLayout>
+
+            <ImageView
+                android:id="@+id/ivProductImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                tools:src="@tools:sample/avatars" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tvBadge"
@@ -36,7 +54,7 @@
             android:background="@color/pastel_chocolate"
             android:padding="6dp"
             android:visibility="gone"
-            app:layout_constraintTop_toTopOf="@id/ivProductImage"
+            app:layout_constraintTop_toTopOf="@id/imageContainer"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginEnd="8dp" />
 
@@ -47,9 +65,9 @@
             android:layout_marginStart="16dp"
             android:textSize="18sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toEndOf="@id/ivProductImage"
+            app:layout_constraintStart_toEndOf="@id/imageContainer"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/ivProductImage"
+            app:layout_constraintTop_toTopOf="@id/imageContainer"
             tools:text="Nombre del Producto" />
 
         <TextView
@@ -69,14 +87,14 @@
             android:layout_height="wrap_content"
             android:text="Agregar"
             android:textSize="14sp"
-            android:backgroundTint="@color/pastel_chocolate"
+            android:background="@drawable/bg_button_primary"
             android:textColor="@color/white"
             app:cornerRadius="16dp"
             app:icon="@drawable/ic_cake"
             app:iconPadding="8dp"
             app:rippleColor="@color/pastel_yellow"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="@id/ivProductImage"
+            app:layout_constraintBottom_toBottomOf="@id/imageContainer"
             android:visibility="visible" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

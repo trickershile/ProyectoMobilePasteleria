@@ -20,9 +20,11 @@ import com.example.ejemploprueba.API.RetrofitClient
 import com.example.ejemploprueba.Model.Producto
 import com.example.ejemploprueba.Model.ProductoResponseDTO
 import com.example.ejemploprueba.Model.toLocal
+import com.example.ejemploprueba.Model.CarritoItem
 import com.example.ejemploprueba.databinding.ActivityProductListBinding
 import com.example.ejemploprueba.databinding.DialogProductDetailBinding
 import com.example.ejemploprueba.utils.SessionManager
+import com.example.ejemploprueba.utils.CarritoManager
 import com.google.android.material.badge.BadgeDrawable
 import com.google.android.material.badge.BadgeUtils
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +37,7 @@ class ProductListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProductListBinding
     private lateinit var adapter: ProductoAdapter
     private lateinit var sessionManager: SessionManager
+    private lateinit var carritoManager: CarritoManager
     private var cartBadge: BadgeDrawable? = null
     private var allProducts: List<Producto> = emptyList()
     private var searchJob: Job? = null
@@ -55,6 +58,7 @@ class ProductListActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sessionManager = SessionManager(this)
+        carritoManager = CarritoManager(this)
 
         setSupportActionBar(binding.toolbar)
         val toggle = ActionBarDrawerToggle(
@@ -77,6 +81,8 @@ class ProductListActivity : AppCompatActivity() {
         setupSearch()
         setupCategoriaFilter()
         setupInfiniteScroll()
+        setupSwipeRefresh()
+        setupBottomNav()
         if (allProducts.isEmpty()) {
             cargarPagina(reset = true)
         }
@@ -276,15 +282,21 @@ class ProductListActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                val response = RetrofitClient.instance.getCarrito("Bearer $token")
-                if (response.isSuccessful && response.body() != null) {
+                val response = if (token.isNotBlank()) RetrofitClient.instance.getCarrito("Bearer $token") else null
+                if (response != null && response.isSuccessful && response.body() != null) {
                     val items = response.body()!!.items
                     val cantidad = items.sumOf { it.cantidad }
                     binding.tvCarritoBadge.text = cantidad.toString()
                     binding.tvCarritoBadge.visibility = if (cantidad > 0) View.VISIBLE else View.GONE
-                    // tvCarritoBadge already reflects the count
+                } else {
+                    val cantidad = carritoManager.getCantidadTotal()
+                    binding.tvCarritoBadge.text = cantidad.toString()
+                    binding.tvCarritoBadge.visibility = if (cantidad > 0) View.VISIBLE else View.GONE
                 }
             } catch (_: Exception) {
+                val cantidad = carritoManager.getCantidadTotal()
+                binding.tvCarritoBadge.text = cantidad.toString()
+                binding.tvCarritoBadge.visibility = if (cantidad > 0) View.VISIBLE else View.GONE
             }
         }
     }
@@ -332,15 +344,35 @@ class ProductListActivity : AppCompatActivity() {
                 } else {
                     val err = response.errorBody()?.string()?.take(200)
                     android.util.Log.e("ProductListActivity", "Agregar carrito error: ${response.code()} ${err}")
-                    if (err?.contains("cliente", true) == true && err.contains("no encontrado", true)) {
-                        Toast.makeText(this@ProductListActivity, "Tu perfil de cliente no existe. Contacta al administrador para activarlo.", Toast.LENGTH_LONG).show()
-                    } else {
-                        Toast.makeText(this@ProductListActivity, err ?: "No se pudo agregar", Toast.LENGTH_SHORT).show()
-                    }
+                    val item = CarritoItem(
+                        detalleId = producto.id,
+                        productoId = producto.id,
+                        nombre = producto.nombre,
+                        precio = producto.precio,
+                        cantidad = 1,
+                        imagen = producto.imagen
+                    )
+                    carritoManager.agregarProducto(item)
+                    updateCarritoBadge()
+                    com.google.android.material.snackbar.Snackbar.make(binding.root, "${producto.nombre} agregado", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                        .setAction("Ver") { startActivity(Intent(this@ProductListActivity, CarritoActivity::class.java)) }
+                        .show()
                 }
             } catch (e: Exception) {
                 android.util.Log.e("ProductListActivity", "Agregar carrito exception", e)
-                Toast.makeText(this@ProductListActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                val item = CarritoItem(
+                    detalleId = producto.id,
+                    productoId = producto.id,
+                    nombre = producto.nombre,
+                    precio = producto.precio,
+                    cantidad = 1,
+                    imagen = producto.imagen
+                )
+                carritoManager.agregarProducto(item)
+                updateCarritoBadge()
+                com.google.android.material.snackbar.Snackbar.make(binding.root, "${producto.nombre} agregado", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                    .setAction("Ver") { startActivity(Intent(this@ProductListActivity, CarritoActivity::class.java)) }
+                    .show()
             } finally {
                 isAddToCartInProgress = false
                 binding.fabCarrito.isEnabled = true
@@ -385,6 +417,28 @@ class ProductListActivity : AppCompatActivity() {
                 if (nearEnd && hasMore && !isLoading) cargarPagina(reset = false)
             }
         })
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setColorSchemeColors(
+            getColor(com.example.ejemploprueba.R.color.pastel_chocolate),
+            getColor(com.example.ejemploprueba.R.color.pastel_pink)
+        )
+        binding.swipeRefresh.setOnRefreshListener {
+            cargarPagina(reset = true)
+            binding.swipeRefresh.isRefreshing = false
+        }
+    }
+
+    private fun setupBottomNav() {
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                com.example.ejemploprueba.R.id.nav_catalogo -> true
+                com.example.ejemploprueba.R.id.nav_carrito -> { startActivity(Intent(this, CarritoActivity::class.java)); true }
+                com.example.ejemploprueba.R.id.nav_perfil -> { startActivity(Intent(this, ProfileActivity::class.java)); true }
+                else -> false
+            }
+        }
     }
 
     private fun cargarPagina(reset: Boolean) {

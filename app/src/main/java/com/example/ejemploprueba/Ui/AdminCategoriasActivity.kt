@@ -36,7 +36,8 @@ class AdminCategoriasActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = CategoriasAdapter(
             onEdit = { categoria -> mostrarDialogoEditar(categoria) },
-            onToggle = { categoria -> confirmarToggle(categoria) }
+            onToggle = { categoria -> confirmarToggle(categoria) },
+            onDelete = { categoria -> confirmarEliminar(categoria) }
         )
         binding.rvCategorias.apply {
             adapter = this@AdminCategoriasActivity.adapter
@@ -60,7 +61,9 @@ class AdminCategoriasActivity : AppCompatActivity() {
                         adapter.submitList(categorias)
                     }
                 } else {
-                    Toast.makeText(this@AdminCategoriasActivity, "Error al cargar categorías", Toast.LENGTH_SHORT).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al cargar categorías"
+                    Toast.makeText(this@AdminCategoriasActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@AdminCategoriasActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -96,7 +99,9 @@ class AdminCategoriasActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     cargarCategorias()
                 } else {
-                    Toast.makeText(this@AdminCategoriasActivity, "Error al crear", Toast.LENGTH_SHORT).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al crear"
+                    Toast.makeText(this@AdminCategoriasActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 showLoading(false)
@@ -130,7 +135,9 @@ class AdminCategoriasActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     cargarCategorias()
                 } else {
-                    Toast.makeText(this@AdminCategoriasActivity, "Error al actualizar", Toast.LENGTH_SHORT).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al actualizar"
+                    Toast.makeText(this@AdminCategoriasActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 showLoading(false)
@@ -155,10 +162,51 @@ class AdminCategoriasActivity : AppCompatActivity() {
                 val token = sessionManager.getToken() ?: ""
                 if (categoria.activa) {
                     val response = RetrofitClient.instance.desactivarCategoria("Bearer $token", categoria.id)
-                    if (response.isSuccessful) cargarCategorias()
+                    if (response.isSuccessful) {
+                        cargarCategorias()
+                    } else {
+                        val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                        val msg = parsed?.mensaje ?: "Error al desactivar"
+                        Toast.makeText(this@AdminCategoriasActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     val response = RetrofitClient.instance.actualizarCategoria("Bearer $token", categoria.id, CategoriaRequestDTO(categoria.nombre))
-                    if (response.isSuccessful) cargarCategorias()
+                    if (response.isSuccessful) {
+                        cargarCategorias()
+                    } else {
+                        val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                        val msg = parsed?.mensaje ?: "Error al activar"
+                        Toast.makeText(this@AdminCategoriasActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } finally {
+                showLoading(false)
+            }
+        }
+    }
+
+    private fun confirmarEliminar(categoria: CategoriaResponseDTO) {
+        AlertDialog.Builder(this)
+            .setTitle("Eliminar Categoría")
+            .setMessage("¿Deseas eliminar ${categoria.nombre}? Esta acción no se puede deshacer")
+            .setPositiveButton("Eliminar") { _, _ -> eliminarCategoria(categoria.id) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun eliminarCategoria(id: Int) {
+        showLoading(true)
+        lifecycleScope.launch {
+            try {
+                val token = sessionManager.getToken() ?: ""
+                val response = RetrofitClient.instance.desactivarCategoria("Bearer $token", id)
+                if (response.isSuccessful) {
+                    Toast.makeText(this@AdminCategoriasActivity, "Categoría eliminada", Toast.LENGTH_SHORT).show()
+                    cargarCategorias()
+                } else {
+                    val parsed = com.example.ejemploprueba.API.parseApiError(response.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al eliminar"
+                    Toast.makeText(this@AdminCategoriasActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 showLoading(false)

@@ -129,6 +129,21 @@ class PagoActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
+                val perfilResp = RetrofitClient.instance.getClientePerfil("Bearer $token")
+                if (!perfilResp.isSuccessful) {
+                    try {
+                        val nombre = sessionManager.getUserName() ?: "Cliente"
+                        val email = sessionManager.getUserEmail() ?: ""
+                        val perfil = com.example.ejemploprueba.Model.ClientePerfilDTO(
+                            id = 0,
+                            nombre = nombre,
+                            email = email,
+                            telefono = telefono,
+                            direccion = direccion
+                        )
+                        RetrofitClient.instance.actualizarClientePerfil("Bearer $token", perfil)
+                    } catch (_: Exception) {}
+                }
                 val crearPedidoResp = RetrofitClient.instance.crearPedidoDesdeCarrito(
                     token = "Bearer $token",
                     body = mapOf("direccion" to "$direccion - Tel: $telefono")
@@ -165,11 +180,9 @@ class PagoActivity : AppCompatActivity() {
                     ).show()
                     finish()
                 } else {
-                    Toast.makeText(
-                        this@PagoActivity,
-                        "Error al procesar el pedido",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    val parsed = com.example.ejemploprueba.API.parseApiError(crearPedidoResp.errorBody())
+                    val msg = parsed?.mensaje ?: "Error al procesar el pedido"
+                    Toast.makeText(this@PagoActivity, msg, Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(
