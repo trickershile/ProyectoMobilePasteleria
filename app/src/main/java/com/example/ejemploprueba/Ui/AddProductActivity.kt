@@ -154,7 +154,8 @@ class AddProductActivity : AppCompatActivity() {
                             descripcion = descripcion,
                             precio = precioNormalized,
                             categoriaId = categoriaId,
-                            stock = stockInicial
+                            stock = stockInicial,
+                            urlImagen = if (imageUrl.startsWith("http")) imageUrl else null
                         )
                         RetrofitClient.instance.crearProducto(
                             token = "Bearer $token",
@@ -171,7 +172,7 @@ class AddProductActivity : AppCompatActivity() {
                                 token = "Bearer $token",
                                 body = CrearInventarioDTO(
                                     productoId = creado.id,
-                                    cantidadInicial = stockInicial,
+                                    cantidad = stockInicial,
                                     stockMinimo = stockInicial
                                 )
                             )

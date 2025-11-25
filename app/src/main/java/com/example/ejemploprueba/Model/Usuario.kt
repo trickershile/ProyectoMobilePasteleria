@@ -105,7 +105,13 @@ data class ProductoResponseDTO(
     val precio: String,
     val imagen: String? = null,
     val categoria: String? = null,
-    val stock: Int? = null
+    val stock: Int? = null,
+    val urlImagen: String? = null,
+    val disponible: Boolean? = null,
+    val categoriaId: Int? = null,
+    val categoriaNombre: String? = null,
+    val stockMinimo: Int? = null,
+    val bajoStock: Boolean? = null
 )
 
 fun ProductoResponseDTO.toLocal(): Producto =
@@ -124,7 +130,8 @@ data class ProductoRequestDTO(
     val descripcion: String,
     val precio: String,
     val categoriaId: Int? = null,
-    val stock: Int? = null 
+    val stock: Int? = null,
+    val urlImagen: String? = null
 )
 data class ProductoUpdateRequestDTO(
     val nombre: String? = null,
@@ -169,8 +176,7 @@ data class DetallePedidoDTO(
 
 data class CrearPagoDTO(
     val pedidoId: Int,
-    val monto: String,
-    val metodo: String
+    val metodoPago: String
 )
 
 data class EnvioDTO(
@@ -201,7 +207,7 @@ data class ActualizarFechaEnvioDTO(
 
 data class CrearInventarioDTO(
     val productoId: Int,
-    val cantidadInicial: Int,
+    val cantidad: Int,
     val stockMinimo: Int
 )
 

@@ -237,13 +237,13 @@ class EditProductActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT
                     ).show()
                     // optional extra uploads
-                    val token = sessionManager.getToken() ?: ""
+                    val uploadToken = sessionManager.getToken() ?: ""
                     for (u in extraImages) {
                         try {
                             val path = saveImageToInternalStorage(u)
                             val file = File(path)
                             val part = MultipartBody.Part.createFormData("imagen", file.name, file.asRequestBody("image/jpeg".toMediaTypeOrNull()))
-                            RetrofitClient.instance.uploadImagen("Bearer $token", part)
+                            RetrofitClient.instance.uploadImagen("Bearer $uploadToken", part)
                         } catch (_: Exception) {}
                     }
                     finish()

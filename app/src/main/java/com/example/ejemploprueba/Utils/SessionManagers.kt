@@ -46,9 +46,22 @@ class SessionManager(context: Context) {
         prefs.edit().clear().apply()
         TokenStore.token = null
     }
+
+    fun setBaseUrlOverride(url: String?) {
+        prefs.edit().apply {
+            if (url == null) remove("baseUrlOverride") else putString("baseUrlOverride", url)
+            apply()
+        }
+        TokenStore.baseUrlOverride = url
+    }
+
+    fun getBaseUrlOverride(): String? = prefs.getString("baseUrlOverride", null)
 }
 
 object TokenStore {
     @Volatile
     var token: String? = null
+
+    @Volatile
+    var baseUrlOverride: String? = null
 }

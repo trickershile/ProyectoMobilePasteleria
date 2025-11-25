@@ -33,12 +33,31 @@ android {
         buildConfig = true
     }
 
-    buildTypes {
-        getByName("debug") {
+    flavorDimensions += listOf("env")
+    productFlavors {
+        create("devEmu") {
+            dimension = "env"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
         }
+        create("devDevice") {
+            dimension = "env"
+            buildConfigField("String", "BASE_URL", "\"http://192.168.1.100:8080/\"")
+        }
+        create("stage") {
+            dimension = "env"
+            buildConfigField("String", "BASE_URL", "\"https://stage.api.gustitosabroson.com/\"")
+        }
+        create("prod") {
+            dimension = "env"
+            buildConfigField("String", "BASE_URL", "\"https://api.gustitosabroson.com/\"")
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            isMinifyEnabled = false
+        }
         getByName("release") {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
             isMinifyEnabled = false
         }
     }
@@ -55,6 +74,7 @@ dependencies {
     // Lifecycle & ViewModel
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-ktx:1.7.2")
 
     // Glide
@@ -84,4 +104,12 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.facebook.shimmer:shimmer:0.5.0")
+}
+
+tasks.register("quickDevEmu") {
+    dependsOn("assembleDevEmuDebug", "lintDevEmuDebug")
+}
+
+tasks.register("quickDevDevice") {
+    dependsOn("assembleDevDeviceDebug", "lintDevDeviceDebug")
 }

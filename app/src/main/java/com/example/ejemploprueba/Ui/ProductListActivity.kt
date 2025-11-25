@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.ejemploprueba.API.RetrofitClient
+import com.example.ejemploprueba.BuildConfig
 import com.example.ejemploprueba.Model.Producto
 import com.example.ejemploprueba.Model.ProductoResponseDTO
 import com.example.ejemploprueba.Model.toLocal
@@ -50,6 +51,7 @@ class ProductListActivity : AppCompatActivity() {
     companion object {
         private const val ACTION_CART_ID = 1001
         private const val ACTION_CONTACT_ID = 1002
+        private const val ACTION_ENV_ID = 1003
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +60,7 @@ class ProductListActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sessionManager = SessionManager(this)
+        RetrofitClient.setBaseUrlOverride(sessionManager.getBaseUrlOverride())
         carritoManager = CarritoManager(this)
 
         setSupportActionBar(binding.toolbar)
@@ -87,7 +90,6 @@ class ProductListActivity : AppCompatActivity() {
             cargarPagina(reset = true)
         }
     }
-
     private fun setupTopBadges() {
         lifecycleScope.launch {
             try {
@@ -101,7 +103,6 @@ class ProductListActivity : AppCompatActivity() {
             } catch (_: Exception) {}
         }
     }
-
     private fun setupRecyclerView() {
         adapter = ProductoAdapter(
             onProductClick = { producto -> showProductDetail(producto) },
@@ -186,12 +187,18 @@ class ProductListActivity : AppCompatActivity() {
             contactItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
         }
 
+        if (BuildConfig.DEBUG) {
+            val envItem = menu.add(Menu.NONE, ACTION_ENV_ID, Menu.NONE, "Cambiar entorno")
+            envItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+        }
+
         binding.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 ACTION_CART_ID -> {
                     startActivity(Intent(this, CarritoActivity::class.java)); true
                 }
                 ACTION_CONTACT_ID -> { contactarNegocio(); true }
+                ACTION_ENV_ID -> { mostrarSelectorEntorno(); true }
                 else -> false
             }
         }
@@ -441,6 +448,32 @@ class ProductListActivity : AppCompatActivity() {
         }
     }
 
+    private fun mostrarSelectorEntorno() {
+        val opciones = arrayOf(
+            "Dev Emulador",
+            "Dev Dispositivo",
+            "Stage",
+            "Prod",
+            "Usar por defecto"
+        )
+        val urls = arrayOf(
+            "http://10.0.2.2:8080/",
+            "http://192.168.1.100:8080/",
+            "https://stage.api.gustitosabroson.com/",
+            "https://api.gustitosabroson.com/",
+            null
+        )
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Selecciona entorno")
+            .setItems(opciones) { _, idx ->
+                val url = urls[idx]
+                SessionManager(this).setBaseUrlOverride(url)
+                RetrofitClient.setBaseUrlOverride(url)
+                Toast.makeText(this, url?.let { "Entorno: $it" } ?: "Entorno predeterminado", Toast.LENGTH_SHORT).show()
+            }
+            .show()
+    }
+
     private fun cargarPagina(reset: Boolean) {
         if (reset) {
             page = 0
@@ -492,4 +525,5 @@ class ProductListActivity : AppCompatActivity() {
             true
         }
     }
+
 }

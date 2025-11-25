@@ -158,10 +158,16 @@ class PagoActivity : AppCompatActivity() {
                         token = "Bearer $token",
                         body = mapOf(
                             "pedidoId" to pedido.id,
-                            "monto" to formatMonto(totalConIva),
-                            "metodo" to "EFECTIVO"
+                            "metodoPago" to "TARJETA"
                         )
                     )
+
+                    if (!pagoResp.isSuccessful) {
+                        val parsed = com.example.ejemploprueba.API.parseApiError(pagoResp.errorBody())
+                        val msg = parsed?.mensaje ?: "Error al crear pago"
+                        Toast.makeText(this@PagoActivity, msg, Toast.LENGTH_LONG).show()
+                        return@launch
+                    }
 
                     if (binding.chSolicitarEnvio.isChecked) {
                         try {
@@ -175,7 +181,7 @@ class PagoActivity : AppCompatActivity() {
                     RetrofitClient.instance.vaciarCarrito("Bearer $token")
                     Toast.makeText(
                         this@PagoActivity,
-                        "¡Pedido realizado con éxito!",
+                        "¡Pedido realizado con éxito! Total (IVA incl.): ${formatMonto(totalConIva)}",
                         Toast.LENGTH_LONG
                     ).show()
                     finish()
