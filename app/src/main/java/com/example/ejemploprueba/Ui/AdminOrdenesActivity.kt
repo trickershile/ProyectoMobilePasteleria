@@ -84,6 +84,8 @@ class AdminOrdenesActivity : AppCompatActivity() {
         binding.rvOrdenes.apply {
             adapter = this@AdminOrdenesActivity.adapter
             layoutManager = LinearLayoutManager(this@AdminOrdenesActivity)
+            setHasFixedSize(true)
+            setItemViewCacheSize(10)
         }
     }
 
@@ -99,6 +101,7 @@ class AdminOrdenesActivity : AppCompatActivity() {
                     val ordenes = response.body() ?: emptyList()
 
                     if (ordenes.isEmpty()) {
+                        binding.tvEmpty.text = "No hay pedidos"
                         binding.tvEmpty.visibility = View.VISIBLE
                         binding.rvOrdenes.visibility = View.GONE
                     } else {

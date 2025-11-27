@@ -27,6 +27,11 @@ class RegisterActivity : AppCompatActivity() {
 
         sessionManager = SessionManager(this)
 
+        binding.etNombre.inputType = binding.etNombre.inputType or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        binding.etEmail.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        binding.etPassword.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        binding.etConfirmPassword.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+
         binding.btnCrearCuenta.setOnClickListener {
             android.util.Log.i("RegisterActivity", "Crear cuenta clicked")
             val nombre = binding.etNombre.text.toString().trim()
@@ -57,6 +62,11 @@ class RegisterActivity : AppCompatActivity() {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        com.example.ejemploprueba.utils.KeyboardUtils.hideIme(binding.root)
     }
 
     private fun performRegister(nombre: String, email: String, password: String) {

@@ -45,7 +45,12 @@ class ProductDetailActivity : AppCompatActivity() {
         binding.tvDescription.text = descripcion
         binding.tvCategoria.text = categoria
         binding.tvStock.text = "Stock: ${stock}"
-        Glide.with(this).load(imagen).into(binding.ivImage)
+        val safe = imagen.takeIf { it.isNotBlank() }
+        Glide.with(this)
+            .load(safe ?: android.R.drawable.ic_menu_report_image)
+            .placeholder(android.R.drawable.ic_menu_report_image)
+            .error(android.R.drawable.ic_menu_report_image)
+            .into(binding.ivImage)
 
         binding.tvCantidad.text = cantidad.toString()
         binding.btnMenos.setOnClickListener {

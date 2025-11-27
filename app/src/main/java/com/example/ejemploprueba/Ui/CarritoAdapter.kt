@@ -27,8 +27,11 @@ class CarritoAdapter(
             binding.tvCantidad.text = item.cantidad.toString()
             binding.tvSubtotal.text = String.format("$%.2f", item.precio.toDouble() * item.cantidad)
 
+            val safe = item.imagen.takeIf { it.isNotBlank() && CarritoAdapter.isLoadableImage(it) } ?: android.R.drawable.ic_menu_report_image
             Glide.with(itemView.context)
-                .load(item.imagen)
+                .load(safe)
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
                 .into(binding.ivProducto)
 
             binding.btnMenos.setOnClickListener {
@@ -53,5 +56,15 @@ class CarritoAdapter(
 
         override fun areContentsTheSame(oldItem: CarritoItem, newItem: CarritoItem) =
             oldItem == newItem
+    }
+
+    companion object {
+        fun isLoadableImage(s: String): Boolean {
+            val lower = s.lowercase()
+            if (lower.startsWith("data:")) return false
+            if (lower.startsWith("http://") || lower.startsWith("https://")) return true
+            if (lower.startsWith("file://") || lower.startsWith("content://")) return true
+            return false
+        }
     }
 }

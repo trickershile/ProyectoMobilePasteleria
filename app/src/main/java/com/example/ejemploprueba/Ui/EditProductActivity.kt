@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import android.text.InputType
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -27,24 +28,30 @@ class EditProductActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private var productoId: Int = 0
     private var imageUrl: String = ""
+    private var selectedImageUri: Uri? = null
     private var extraImages: List<Uri> = emptyList()
     private var producto: ProductoResponseDTO? = null
     private var categorias: List<CategoriaResponseDTO> = emptyList()
 
     private val selectImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        selectedImageUri = uri
         uri?.let {
-            lifecycleScope.launch {
-                val path = saveImageToInternalStorage(it)
-                imageUrl = path
-                Glide.with(this@EditProductActivity).load(imageUrl).into(binding.ivProductImage)
-            }
+            Glide.with(this@EditProductActivity)
+                .load(it)
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
+                .into(binding.ivProductImage)
         }
     }
 
     private val selectMultipleImages = registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         extraImages = uris ?: emptyList()
         if (extraImages.isNotEmpty()) {
-            Glide.with(this).load(extraImages.first()).into(binding.ivProductImage)
+            Glide.with(this)
+                .load(extraImages.first())
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
+                .into(binding.ivProductImage)
         }
     }
 
@@ -105,7 +112,11 @@ class EditProductActivity : AppCompatActivity() {
         binding.etStock.setText((producto.stock ?: 0).toString())
 
         imageUrl = producto.imagen ?: ""
-        Glide.with(this).load(producto.imagen ?: "").into(binding.ivProductImage)
+        Glide.with(this)
+            .load(producto.imagen?.takeIf { it.isNotBlank() } ?: android.R.drawable.ic_menu_report_image)
+            .placeholder(android.R.drawable.ic_menu_report_image)
+            .error(android.R.drawable.ic_menu_report_image)
+            .into(binding.ivProductImage)
 
         if (categorias.isNotEmpty()) {
             val nombres = categorias.map { it.nombre }
@@ -161,7 +172,11 @@ class EditProductActivity : AppCompatActivity() {
             val url = binding.etImageUrl.text.toString().trim()
             if (url.isNotEmpty()) {
                 imageUrl = url
-                Glide.with(this).load(url).into(binding.ivProductImage)
+                Glide.with(this)
+                    .load(url)
+                    .placeholder(android.R.drawable.ic_menu_report_image)
+                    .error(android.R.drawable.ic_menu_report_image)
+                    .into(binding.ivProductImage)
             } else {
                 Toast.makeText(this, "Ingresa una URL válida", Toast.LENGTH_SHORT).show()
             }
@@ -190,14 +205,14 @@ class EditProductActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                val isLocalImage = imageUrl.isNotEmpty() && !imageUrl.startsWith("http")
                 val response = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    if (isLocalImage) {
-                        val file = File(imageUrl)
+                    if (selectedImageUri != null) {
+                        val input = contentResolver.openInputStream(selectedImageUri!!)
+                        val bytes = input?.readBytes() ?: throw IllegalArgumentException("Imagen inválida")
                         val imagePart = MultipartBody.Part.createFormData(
                             "imagen",
-                            file.name,
-                            file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                            "imagen.jpg",
+                            bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
                         )
                         val parts: MutableMap<String, okhttp3.RequestBody> = mutableMapOf(
                             "nombre" to nombre.toRequestBody("text/plain".toMediaTypeOrNull()),
@@ -220,7 +235,8 @@ class EditProductActivity : AppCompatActivity() {
                             descripcion = descripcion,
                             precio = precio,
                             stock = stock,
-                            categoriaId = categoriaId
+                            categoriaId = categoriaId,
+                            urlImagen = if (imageUrl.startsWith("http")) imageUrl else null
                         )
                         RetrofitClient.instance.actualizarProducto(
                             token = "Bearer $token",
@@ -240,9 +256,13 @@ class EditProductActivity : AppCompatActivity() {
                     val uploadToken = sessionManager.getToken() ?: ""
                     for (u in extraImages) {
                         try {
-                            val path = saveImageToInternalStorage(u)
-                            val file = File(path)
-                            val part = MultipartBody.Part.createFormData("imagen", file.name, file.asRequestBody("image/jpeg".toMediaTypeOrNull()))
+                            val input = contentResolver.openInputStream(u)
+                            val bytes = input?.readBytes() ?: continue
+                            val part = MultipartBody.Part.createFormData(
+                                "imagen",
+                                "extra.jpg",
+                                bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
+                            )
                             RetrofitClient.instance.uploadImagen("Bearer $uploadToken", part)
                         } catch (_: Exception) {}
                     }
@@ -266,21 +286,6 @@ class EditProductActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun saveImageToInternalStorage(uri: Uri): String {
-        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val inputStream = contentResolver.openInputStream(uri)
-                val fileName = "product_${System.currentTimeMillis()}.jpg"
-                val file = File(filesDir, fileName)
-                FileOutputStream(file).use { output ->
-                    inputStream?.copyTo(output)
-                }
-                file.absolutePath
-            } catch (e: Exception) {
-                "https://via.placeholder.com/400"
-            }
-        }
-    }
 
     private fun showLoading(loading: Boolean) {
         binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE

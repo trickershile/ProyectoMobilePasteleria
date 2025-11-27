@@ -12,6 +12,10 @@ import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+@RunWith(RobolectricTestRunner::class)
 class ProductUploaderTest {
     private fun api(server: MockWebServer): PasteleriaApi {
         val gson = GsonBuilder().create()
@@ -45,7 +49,7 @@ class ProductUploaderTest {
             nombre = "Torta Fresa",
             precio = 25.50,
             cantidadInicial = 10,
-            base64OrDataUri = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAA=="
+            base64OrDataUri = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k="
         )
         assertEquals("Torta Fresa", res.nombre)
         server.shutdown()

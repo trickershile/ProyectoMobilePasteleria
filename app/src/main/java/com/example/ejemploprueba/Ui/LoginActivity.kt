@@ -26,6 +26,7 @@ class LoginActivity : AppCompatActivity() {
         android.util.Log.i("LoginActivity", "setContentView done")
 
         sessionManager = SessionManager(this)
+        RetrofitClient.setBaseUrlOverride(sessionManager.getBaseUrlOverride())
         android.util.Log.i("LoginActivity", "SessionManager initialized")
 
         if (sessionManager.isLoggedIn()) {

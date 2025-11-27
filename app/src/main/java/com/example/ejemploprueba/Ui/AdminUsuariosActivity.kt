@@ -9,6 +9,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ejemploprueba.API.RetrofitClient
 import com.example.ejemploprueba.Model.Usuario
+import com.example.ejemploprueba.Model.UsuarioAdminCreateDTO
+import com.example.ejemploprueba.Model.UsuarioAdminUpdateDTO
+import com.example.ejemploprueba.Model.UsuarioCreadoDTO
 import com.example.ejemploprueba.databinding.ActivityAdminUsuariosBinding
 import com.example.ejemploprueba.utils.SessionManager
 import kotlinx.coroutines.launch
@@ -45,6 +48,8 @@ class AdminUsuariosActivity : AppCompatActivity() {
         binding.rvUsuarios.apply {
             adapter = this@AdminUsuariosActivity.adapter
             layoutManager = LinearLayoutManager(this@AdminUsuariosActivity)
+            setHasFixedSize(true)
+            setItemViewCacheSize(10)
         }
 
         binding.etSearchUsuarios.addTextChangedListener(object : android.text.TextWatcher {
@@ -292,68 +297,96 @@ class AdminUsuariosActivity : AppCompatActivity() {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(48, 24, 48, 0)
         }
-        val etNombre = android.widget.EditText(this).apply { hint = "Nombre" }
-        val etEmail = android.widget.EditText(this).apply { hint = "Email"; inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
+        val etNombre = android.widget.EditText(this).apply { hint = "Nombre (opcional)"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS }
+        val etEmail = android.widget.EditText(this).apply { hint = "Email (obligatorio)"; inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
+        val etPassword = android.widget.EditText(this).apply { hint = "Contraseña (opcional)"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
         val roles = arrayOf("Cliente", "Administrador")
         val spRole = android.widget.Spinner(this).apply {
             adapter = android.widget.ArrayAdapter(this@AdminUsuariosActivity, android.R.layout.simple_spinner_dropdown_item, roles)
         }
         container.addView(etNombre)
         container.addView(etEmail)
+        container.addView(etPassword)
         container.addView(spRole)
-
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Crear usuario")
             .setView(container)
             .setPositiveButton("Crear") { _, _ ->
                 val nombre = etNombre.text.toString().trim()
                 val email = etEmail.text.toString().trim()
+                val password = etPassword.text.toString().trim()
                 val role = spRole.selectedItem.toString()
-                if (nombre.isEmpty() || email.isEmpty()) {
-                    Toast.makeText(this, "Completa nombre y email", Toast.LENGTH_SHORT).show()
+                try { etNombre.clearFocus(); etEmail.clearFocus(); etPassword.clearFocus() } catch (_: Exception) {}
+                com.example.ejemploprueba.utils.KeyboardUtils.hideImeFrom(this)
+                if (email.isEmpty()) {
+                    Toast.makeText(this, "El email es obligatorio", Toast.LENGTH_SHORT).show()
                 } else {
-                    crearUsuario(nombre, email, role)
+                    crearUsuario(email, nombre, role, password)
                 }
             }
             .setNegativeButton("Cancelar", null)
-            .show()
+            .create()
+        dialog.setOnDismissListener {
+            try { container.clearFocus() } catch (_: Exception) {}
+            container.post { com.example.ejemploprueba.utils.KeyboardUtils.hideIme(container) }
+        }
+        dialog.show()
     }
+
+
 
     private fun mostrarDialogoEditar(usuario: Usuario) {
         val container = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(48, 24, 48, 0)
         }
-        val etNombre = android.widget.EditText(this).apply { hint = "Nombre"; setText(usuario.nombre) }
+        val etNombre = android.widget.EditText(this).apply { hint = "Nombre"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS; setText(usuario.nombre) }
         val etEmail = android.widget.EditText(this).apply { hint = "Email"; inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS; setText(usuario.email) }
+        val etPassword = android.widget.EditText(this).apply { hint = "Nueva contraseña (opcional)"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
+
         val roles = arrayOf("Cliente", "Administrador")
         val spRole = android.widget.Spinner(this).apply {
             adapter = android.widget.ArrayAdapter(this@AdminUsuariosActivity, android.R.layout.simple_spinner_dropdown_item, roles)
-            setSelection(if (usuario.role.equals("Administrador", true)) 1 else 0)
+            setSelection(if (usuario.role.equals("ADMIN", true) || usuario.role.equals("Administrador", true)) 1 else 0)
         }
         container.addView(etNombre)
         container.addView(etEmail)
+        container.addView(etPassword)
         container.addView(spRole)
-
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Editar usuario")
             .setView(container)
             .setPositiveButton("Guardar") { _, _ ->
                 val nombre = etNombre.text.toString().trim()
                 val email = etEmail.text.toString().trim()
+                val password = etPassword.text.toString().trim()
                 val role = spRole.selectedItem.toString()
+                try { etNombre.clearFocus(); etEmail.clearFocus(); etPassword.clearFocus() } catch (_: Exception) {}
+                com.example.ejemploprueba.utils.KeyboardUtils.hideImeFrom(this)
+
                 if (nombre.isEmpty() || email.isEmpty()) {
-                    android.widget.Toast.makeText(this, "Completa nombre y email", android.widget.Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "El nombre y el email no pueden estar vacíos", Toast.LENGTH_SHORT).show()
                 } else {
-                    val bloqueadoActual = usuario.activo?.let { !it } ?: usuario.bloqueado
-                    editarUsuario(usuario.id, nombre, email, role, bloqueadoActual)
+                    val rolBackend = if (role.equals("Administrador", true)) "ADMIN" else "CLIENTE"
+                    val updateDto = UsuarioAdminUpdateDTO(
+                        nombre = nombre.takeIf { it != usuario.nombre },
+                        email = email.takeIf { !it.equals(usuario.email, ignoreCase = true) },
+                        rol = rolBackend.takeIf { !it.equals(usuario.role, ignoreCase = true) },
+                        password = password.takeIf { it.isNotBlank() }
+                    )
+                    editarUsuario(usuario.id, updateDto)
                 }
             }
             .setNegativeButton("Cancelar", null)
-            .show()
+            .create()
+        dialog.setOnDismissListener {
+            try { container.clearFocus() } catch (_: Exception) {}
+            container.post { com.example.ejemploprueba.utils.KeyboardUtils.hideIme(container) }
+        }
+        dialog.show()
     }
 
-    private fun editarUsuario(id: Int, nombre: String, email: String, role: String, bloqueado: Boolean) {
+    private fun editarUsuario(id: Int, updateDto: UsuarioAdminUpdateDTO) {
         showLoading(true)
         lifecycleScope.launch {
             try {
@@ -362,7 +395,7 @@ class AdminUsuariosActivity : AppCompatActivity() {
                     RetrofitClient.instance.actualizarUsuarioAdmin(
                         token = "Bearer $token",
                         usuarioId = id,
-                        usuario = Usuario(id = id, nombre = nombre, email = email, role = role, bloqueado = bloqueado, activo = !bloqueado)
+                        usuario = updateDto
                     )
                 }
                 if (resp.isSuccessful) {
@@ -408,7 +441,14 @@ class AdminUsuariosActivity : AppCompatActivity() {
                     val code = resp.code()
                     val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
                     val msg = parsed?.mensaje ?: "No se pudo eliminar"
-                    if (code == 409 || (msg.contains("relacion", true) || msg.contains("vincul", true))) {
+                    val needsSoft = code == 409 ||
+                            msg.contains("relacion", true) ||
+                            msg.contains("vincul", true) ||
+                            msg.contains("foreign key", true) ||
+                            msg.contains("constraint", true) ||
+                            msg.contains("parent row", true) ||
+                            msg.contains("FK", true)
+                    if (needsSoft) {
                         val desResp = withContext(Dispatchers.IO) {
                             RetrofitClient.instance.desactivarUsuarioAdmin(
                                 token = "Bearer $token",
@@ -435,46 +475,50 @@ class AdminUsuariosActivity : AppCompatActivity() {
         }
     }
 
-    private fun crearUsuario(nombre: String, email: String, role: String) {
+    private fun crearUsuario(email: String, nombre: String?, role: String?, password: String?) {
         showLoading(true)
-        binding.fabAddUser.isEnabled = false
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                    val resp = withContext(Dispatchers.IO) {
-                        RetrofitClient.instance.crearUsuarioAdmin(
-                            token = "Bearer $token",
-                            usuario = Usuario(id = 0, nombre = nombre, email = email, role = role, bloqueado = false, activo = true)
-                        )
-                    }
+                val rolBackend = if (role.equals("Administrador", true)) "ADMIN" else "CLIENTE"
+
+                val body = UsuarioAdminCreateDTO(
+                    email = email,
+                    nombre = nombre?.takeIf { it.isNotBlank() },
+                    rol = rolBackend,
+                    password = password?.takeIf { it.isNotBlank() }
+                )
+
+                val resp = withContext(Dispatchers.IO) {
+                    RetrofitClient.instance.crearUsuarioAdmin(
+                        token = "Bearer $token",
+                        usuario = body
+                    )
+                }
+
                 if (resp.isSuccessful) {
-                    val creado = resp.body()
-                    if (creado != null && role.equals("Cliente", true)) {
-                        val clienteResp = withContext(Dispatchers.IO) {
-                            RetrofitClient.instance.crearClienteParaUsuarioAdmin(
-                                token = "Bearer $token",
-                                usuarioId = creado.id
-                            )
-                        }
-                        if (clienteResp.isSuccessful) {
-                            Toast.makeText(this@AdminUsuariosActivity, "Usuario y cliente creados", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this@AdminUsuariosActivity, "Usuario creado, error al crear cliente", Toast.LENGTH_SHORT).show()
-                        }
+                    val usuarioCreado = resp.body()
+                    val mensajePassword = usuarioCreado?.mensajePassword
+
+                    if (!mensajePassword.isNullOrBlank()) {
+                        AlertDialog.Builder(this@AdminUsuariosActivity)
+                            .setTitle("Usuario Creado con Contraseña Temporal")
+                            .setMessage("El usuario ${usuarioCreado.email} ha sido creado. La contraseña temporal es: $mensajePassword")
+                            .setPositiveButton("Aceptar", null)
+                            .show()
                     } else {
-                        Toast.makeText(this@AdminUsuariosActivity, "Usuario creado", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@AdminUsuariosActivity, "Usuario creado exitosamente", Toast.LENGTH_SHORT).show()
                     }
                     cargarUsuarios()
                 } else {
                     val parsed = com.example.ejemploprueba.API.parseApiError(resp.errorBody())
-                    val msg = parsed?.mensaje ?: "Error al crear"
-                    Toast.makeText(this@AdminUsuariosActivity, msg, Toast.LENGTH_SHORT).show()
+                    val msg = parsed?.mensaje ?: "Error al crear el usuario"
+                    Toast.makeText(this@AdminUsuariosActivity, msg, Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@AdminUsuariosActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@AdminUsuariosActivity, "Error de red: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
                 showLoading(false)
-                binding.fabAddUser.isEnabled = true
             }
         }
     }

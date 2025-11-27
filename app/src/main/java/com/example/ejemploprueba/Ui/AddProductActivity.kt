@@ -4,7 +4,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import android.text.InputType
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
@@ -30,13 +33,17 @@ class AddProductActivity : AppCompatActivity() {
     private var imageUrl: String = ""
     private var selectedImages: List<Uri> = emptyList()
     private var categorias: List<CategoriaResponseDTO> = emptyList()
+    private val formViewModel: ProductFormViewModel by viewModels()
 
     private val selectImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             lifecycleScope.launch {
-                val path = saveImageToInternalStorage(it)
-                imageUrl = path
-                Glide.with(this@AddProductActivity).load(imageUrl).into(binding.ivProductImage)
+                formViewModel.setImageUri(it)
+                Glide.with(this@AddProductActivity)
+                    .load(it)
+                    .placeholder(android.R.drawable.ic_menu_report_image)
+                    .error(android.R.drawable.ic_menu_report_image)
+                    .into(binding.ivProductImage)
             }
         }
     }
@@ -45,7 +52,13 @@ class AddProductActivity : AppCompatActivity() {
         selectedImages = uris ?: emptyList()
         if (selectedImages.isNotEmpty()) {
             // preview first image
-            Glide.with(this).load(selectedImages.first()).into(binding.ivProductImage)
+            val first = selectedImages.first()
+            formViewModel.setImageUri(first)
+            Glide.with(this)
+                .load(first)
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
+                .into(binding.ivProductImage)
         }
     }
 
@@ -54,6 +67,8 @@ class AddProductActivity : AppCompatActivity() {
         binding = ActivityAddProductBinding.inflate(layoutInflater)
         setContentView(binding.root)
         sessionManager = SessionManager(this)
+        binding.etDescription.inputType = binding.etDescription.inputType or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        binding.etName.inputType = binding.etName.inputType or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         cargarCategorias()
         // Botón para seleccionar desde galería
         binding.btnSelectImage.setOnClickListener {
@@ -67,29 +82,38 @@ class AddProductActivity : AppCompatActivity() {
         // Botón para cargar desde URL
         binding.btnLoadImage.setOnClickListener {
             val url = binding.etImageUrl.text.toString().trim()
-            if (url.isNotEmpty()) {
+            val lower = url.lowercase()
+            if (lower.startsWith("http://") || lower.startsWith("https://")) {
                 imageUrl = url
-                Glide.with(this).load(url).into(binding.ivProductImage)
+                formViewModel.setImageUrl(url)
+                Glide.with(this)
+                    .load(url)
+                    .placeholder(android.R.drawable.ic_menu_report_image)
+                    .error(android.R.drawable.ic_menu_report_image)
+                    .into(binding.ivProductImage)
             } else {
                 Toast.makeText(this, "Ingresa una URL válida", Toast.LENGTH_SHORT).show()
             }
         }
 
         binding.btnSaveProduct.setOnClickListener {
-            val nombre = binding.etName.text.toString().trim()
-            val descripcion = binding.etDescription.text.toString().trim()
-            val precioStr = binding.etPrice.text.toString().trim()
-            val precio = precioStr.toDoubleOrNull() ?: 0.0
-            val stockInicial = binding.etStockInicial.text.toString().trim().toIntOrNull()
+            formViewModel.setNombre(binding.etName.text.toString().trim())
+            formViewModel.setDescripcion(binding.etDescription.text.toString().trim())
+            formViewModel.setPrecio(binding.etPrice.text.toString().trim())
+            formViewModel.setCantidadInicial(binding.etStockInicial.text.toString().trim())
+
+            val nombre = formViewModel.nombre.value?.trim().orEmpty()
+            val precioDouble = formViewModel.getPrecioDouble() ?: 0.0
+            val cantidadInicial = formViewModel.getCantidadInicialInt()
             val selectedIndex = binding.spCategoria.selectedItemPosition
             val categoriaId = if (selectedIndex >= 0 && selectedIndex < categorias.size) categorias[selectedIndex].id else null
 
-            if (nombre.isEmpty() || precio <= 0) {
+            if (nombre.isEmpty() || precioDouble <= 0.0) {
                 Toast.makeText(this, "Completa nombre y precio", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            if (stockInicial == null || stockInicial <= 0) {
+            if (cantidadInicial == null || cantidadInicial <= 0) {
                 Toast.makeText(this, "Stock inicial debe ser mayor a 0", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -99,7 +123,31 @@ class AddProductActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            guardarProducto(nombre, descripcion, precioStr, stockInicial, categoriaId)
+            val currentUri = formViewModel.imageUri.value
+            val currentUrl = formViewModel.imageUrl.value
+            if (currentUri == null && (currentUrl.isNullOrEmpty() || !currentUrl.startsWith("http"))) {
+                Toast.makeText(this, "Selecciona una imagen o ingresa URL válida", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            guardarProducto(nombre, formViewModel.descripcion.value?.trim().orEmpty(), String.format(java.util.Locale.US, "%.2f", precioDouble), cantidadInicial, categoriaId)
+        }
+
+        binding.etName.doOnTextChanged { text, _, _, _ -> formViewModel.setNombre(text?.toString().orEmpty()) }
+        binding.etDescription.doOnTextChanged { text, _, _, _ -> formViewModel.setDescripcion(text?.toString().orEmpty()) }
+        binding.etPrice.doOnTextChanged { text, _, _, _ -> formViewModel.setPrecio(text?.toString().orEmpty()) }
+        binding.etStockInicial.doOnTextChanged { text, _, _, _ -> formViewModel.setCantidadInicial(text?.toString().orEmpty()) }
+
+        if (formViewModel.nombre.value?.isNotEmpty() == true) binding.etName.setText(formViewModel.nombre.value)
+        if (formViewModel.descripcion.value?.isNotEmpty() == true) binding.etDescription.setText(formViewModel.descripcion.value)
+        if (formViewModel.precio.value?.isNotEmpty() == true) binding.etPrice.setText(formViewModel.precio.value)
+        if (formViewModel.cantidadInicial.value?.isNotEmpty() == true) binding.etStockInicial.setText(formViewModel.cantidadInicial.value)
+        if (!formViewModel.imageUrl.value.isNullOrEmpty()) {
+            Glide.with(this)
+                .load(formViewModel.imageUrl.value)
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
+                .into(binding.ivProductImage)
         }
     }
 
@@ -126,21 +174,23 @@ class AddProductActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                val isLocalImage = imageUrl.isNotEmpty() && !imageUrl.startsWith("http")
+                val currentUri = formViewModel.imageUri.value
+                val currentUrl = formViewModel.imageUrl.value ?: imageUrl
                 val response = withContext(Dispatchers.IO) {
-                if (isLocalImage) {
-                    val file = File(imageUrl)
+                if (currentUri != null) {
+                    val input = contentResolver.openInputStream(currentUri)
+                    val bytes = input?.readBytes() ?: throw IllegalArgumentException("Imagen inválida")
                     val imagePart = MultipartBody.Part.createFormData(
                         "imagen",
-                        file.name,
-                        file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                        "imagen.jpg",
+                        bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
                     )
                     val parts = mapOf(
                         "nombre" to nombre.toRequestBody("text/plain".toMediaTypeOrNull()),
                         "descripcion" to descripcion.toRequestBody("text/plain".toMediaTypeOrNull()),
                         "precio" to precio.toRequestBody("text/plain".toMediaTypeOrNull()),
                         "categoriaId" to categoriaId.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
-                        "stock" to stockInicial.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+                        "cantidadInicial" to stockInicial.toString().toRequestBody("text/plain".toMediaTypeOrNull())
                     )
                     RetrofitClient.instance.crearProductoConImagen(
                         token = "Bearer $token",
@@ -153,59 +203,35 @@ class AddProductActivity : AppCompatActivity() {
                             nombre = nombre,
                             descripcion = descripcion,
                             precio = precioNormalized,
+                            cantidadInicial = stockInicial,
                             categoriaId = categoriaId,
-                            stock = stockInicial,
-                            urlImagen = if (imageUrl.startsWith("http")) imageUrl else null
+                            urlImagen = if (!currentUrl.isNullOrEmpty() && currentUrl.startsWith("http")) currentUrl else null
                         )
                         RetrofitClient.instance.crearProducto(
                             token = "Bearer $token",
                             body = body
                         )
-                    }
+                }
                 }
 
                 if (response.isSuccessful) {
                     val creado = response.body()
                     if (creado != null) {
-                        val invResp = withContext(Dispatchers.IO) {
-                            RetrofitClient.instance.crearInventario(
-                                token = "Bearer $token",
-                                body = CrearInventarioDTO(
-                                    productoId = creado.id,
-                                    cantidad = stockInicial,
-                                    stockMinimo = stockInicial
-                                )
-                            )
-                        }
-                        if (invResp.isSuccessful) {
-                            if (selectedImages.size > 1) {
+                        if (selectedImages.size > 1) {
                                 for (u in selectedImages.drop(1)) {
                                     try {
-                                        val path = saveImageToInternalStorage(u)
-                                        val file = File(path)
-                                        val part = MultipartBody.Part.createFormData("imagen", file.name, file.asRequestBody("image/jpeg".toMediaTypeOrNull()))
+                                        val input = contentResolver.openInputStream(u)
+                                        val bytes = input?.readBytes() ?: continue
+                                        val part = MultipartBody.Part.createFormData(
+                                            "imagen",
+                                            "extra.jpg",
+                                            bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
+                                        )
                                         RetrofitClient.instance.uploadImagen("Bearer $token", part)
                                     } catch (_: Exception) {}
                                 }
                             }
-                            Toast.makeText(this@AddProductActivity, "Producto e inventario guardados", Toast.LENGTH_SHORT).show()
-                        } else {
-                            val invErr = com.example.ejemploprueba.API.parseApiError(invResp.errorBody())
-                            val invMsg = invErr?.mensaje ?: "Error al crear inventario"
-                            val delResp = withContext(Dispatchers.IO) {
-                                RetrofitClient.instance.eliminarProducto(
-                                    token = "Bearer $token",
-                                    id = creado.id
-                                )
-                            }
-                            if (delResp.isSuccessful) {
-                                Toast.makeText(this@AddProductActivity, "$invMsg, producto revertido", Toast.LENGTH_SHORT).show()
-                            } else {
-                                val delErr = com.example.ejemploprueba.API.parseApiError(delResp.errorBody())
-                                val delMsg = delErr?.mensaje ?: "Error al revertir producto"
-                                Toast.makeText(this@AddProductActivity, "$invMsg y $delMsg", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                        Toast.makeText(this@AddProductActivity, "Producto guardado", Toast.LENGTH_SHORT).show()
                     } else {
                         Toast.makeText(this@AddProductActivity, "Producto guardado", Toast.LENGTH_SHORT).show()
                     }
@@ -222,6 +248,11 @@ class AddProductActivity : AppCompatActivity() {
                 binding.btnSaveProduct.isEnabled = true
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        com.example.ejemploprueba.utils.KeyboardUtils.hideIme(binding.root)
     }
 
     private fun cargarCategorias() {

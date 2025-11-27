@@ -27,8 +27,13 @@ class AdminProductoAdapter(
             binding.tvStock.text = "Stock: ${producto.stock}"
             binding.tvCategoria.text = producto.categoria
 
+            val src = producto.imagen.takeIf { it.isNotBlank() && isLoadableImage(it) } ?: android.R.drawable.ic_menu_report_image
             Glide.with(itemView.context)
-                .load(producto.imagen)
+                .load(src)
+                .centerCrop()
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC)
                 .into(binding.ivProducto)
 
             binding.btnEditar.setOnClickListener { onEdit(producto) }
@@ -42,5 +47,15 @@ class AdminProductoAdapter(
 
         override fun areContentsTheSame(oldItem: Producto, newItem: Producto) =
             oldItem == newItem
+    }
+
+    companion object {
+        fun isLoadableImage(s: String): Boolean {
+            val lower = s.lowercase()
+            if (lower.startsWith("data:")) return false
+            if (lower.startsWith("http://") || lower.startsWith("https://")) return true
+            if (lower.startsWith("file://") || lower.startsWith("content://")) return true
+            return false
+        }
     }
 }

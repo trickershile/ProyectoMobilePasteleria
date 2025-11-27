@@ -36,11 +36,13 @@ class AdminInventarioActivity : AppCompatActivity() {
         adapter = InventarioAdapter(
             onAgregar = { item -> ajustarStock(item, 1) },
             onReducir = { item -> ajustarStock(item, -1) },
-            onDisponibilidad = { item, cantidad -> verificarDisponibilidad(item.productoId, cantidad) }
+            onDisponibilidad = { item, cantidad -> verificarDisponibilidad(item, cantidad) }
         )
         binding.rvInventario.apply {
             adapter = this@AdminInventarioActivity.adapter
             layoutManager = LinearLayoutManager(this@AdminInventarioActivity)
+            setHasFixedSize(true)
+            setItemViewCacheSize(10)
         }
     }
 
@@ -92,15 +94,16 @@ class AdminInventarioActivity : AppCompatActivity() {
         }
     }
 
-    private fun verificarDisponibilidad(productoId: Int, cantidad: Int) {
+    private fun verificarDisponibilidad(item: com.example.ejemploprueba.Model.InventarioItemDTO, cantidad: Int) {
         showLoading(true)
         lifecycleScope.launch {
             try {
                 val token = sessionManager.getToken() ?: ""
-                val resp = RetrofitClient.instance.verificarDisponibilidad("Bearer $token", productoId, cantidad)
+                val resp = RetrofitClient.instance.verificarDisponibilidad("Bearer $token", item.productoId, cantidad)
                 if (resp.isSuccessful && resp.body() != null) {
                     val d = resp.body()!!
-                    Toast.makeText(this@AdminInventarioActivity, if (d.disponible) "Disponible (${d.disponibleCantidad})" else "No disponible", Toast.LENGTH_SHORT).show()
+                    val nombreProd = item.nombre
+                    Toast.makeText(this@AdminInventarioActivity, if (d.disponible) "${nombreProd}: Disponible (${d.disponibleCantidad})" else "${nombreProd}: No disponible", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this@AdminInventarioActivity, "Error al verificar", Toast.LENGTH_SHORT).show()
                 }

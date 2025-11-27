@@ -32,9 +32,12 @@ class ProductoAdapter(
             binding.tvProductName.text = producto.nombre
             binding.tvProductPrice.text = "$${producto.precio}"
             try { binding.shimmerContainer.startShimmer() } catch (_: Exception) {}
+            val src = producto.imagen.takeIf { it.isNotBlank() && isLoadableImage(it) } ?: android.R.drawable.ic_menu_report_image
             Glide.with(itemView.context)
-                .load(producto.imagen)
+                .load(src)
                 .centerCrop()
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
                 .listener(object : RequestListener<android.graphics.drawable.Drawable> {
                     override fun onLoadFailed(
@@ -75,6 +78,14 @@ class ProductoAdapter(
                 binding.btnAddToCart.visibility = android.view.View.GONE
             }
         }
+    }
+
+    private fun isLoadableImage(s: String): Boolean {
+        val lower = s.lowercase()
+        if (lower.startsWith("data:")) return false
+        if (lower.startsWith("http://") || lower.startsWith("https://")) return true
+        if (lower.startsWith("file://") || lower.startsWith("content://")) return true
+        return false
     }
 
     class DiffCallback : DiffUtil.ItemCallback<Producto>() {

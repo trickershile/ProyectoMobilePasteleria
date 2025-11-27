@@ -14,17 +14,18 @@ interface PasteleriaApi {
     @GET("/api/usuarios/admin/todos")
     suspend fun getUsuariosAdminTodos(@Header("Authorization") token: String): Response<List<Usuario>>
 
-    @POST("/api/usuarios/admin/crear")
+    @POST("/api/usuarios/admin")
     suspend fun crearUsuarioAdmin(
         @Header("Authorization") token: String,
-        @Body usuario: Usuario
+        @Body usuario: UsuarioAdminCreateDTO
     ): Response<UsuarioCreadoDTO>
+
 
     @PUT("/api/usuarios/admin/{usuarioId}")
     suspend fun actualizarUsuarioAdmin(
         @Header("Authorization") token: String,
         @Path("usuarioId") usuarioId: Int,
-        @Body usuario: Usuario
+        @Body usuario: UsuarioAdminUpdateDTO
     ): Response<Usuario>
 
     @PATCH("/api/usuarios/admin/{usuarioId}/rol")
@@ -127,6 +128,7 @@ interface PasteleriaApi {
 
     @GET("/api/pedidos/admin/todos")
     suspend fun getPedidosAdminTodos(@Header("Authorization") token: String): Response<List<PedidoDTO>>
+
 
     @PUT("/api/pedidos/admin/{pedidoId}/estado")
     suspend fun actualizarEstadoPedidoAdmin(
@@ -512,4 +514,5 @@ interface PasteleriaApi {
         @Query("desde") desde: String,
         @Query("hasta") hasta: String
     ): Response<List<PagosMetodoDTO>>
+
 }

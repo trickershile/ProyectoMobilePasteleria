@@ -23,7 +23,10 @@ object RetrofitClient {
 
     @Synchronized
     fun get(): PasteleriaApi {
-        val desiredBase = TokenStore.baseUrlOverride ?: BuildConfig.BASE_URL
+        var desiredBase = TokenStore.baseUrlOverride ?: BuildConfig.BASE_URL
+        if (TokenStore.baseUrlOverride == null && isEmulator() && desiredBase.startsWith("http://192.168.")) {
+            desiredBase = desiredBase.replace(Regex("http://192\\.168\\.[0-9]+\\.[0-9]+"), "http://10.0.2.2")
+        }
         if (api == null || usedBaseUrl != desiredBase) {
             usedBaseUrl = desiredBase
 
@@ -69,11 +72,23 @@ object RetrofitClient {
         }
         return api!!
     }
+
+    private fun isEmulator(): Boolean {
+        return android.os.Build.FINGERPRINT.startsWith("generic") ||
+                android.os.Build.FINGERPRINT.lowercase().contains("emulator") ||
+                android.os.Build.MODEL.contains("Emulator") ||
+                android.os.Build.PRODUCT.contains("sdk") ||
+                android.os.Build.MANUFACTURER.contains("Genymotion")
+    }
 }
 
 fun parseApiError(body: okhttp3.ResponseBody?): com.example.ejemploprueba.Model.ErrorResponseDTO? {
     return try {
         val s = body?.string() ?: return null
-        com.google.gson.Gson().fromJson(s, com.example.ejemploprueba.Model.ErrorResponseDTO::class.java)
+        try {
+            com.google.gson.Gson().fromJson(s, com.example.ejemploprueba.Model.ErrorResponseDTO::class.java)
+        } catch (_: Exception) {
+            com.example.ejemploprueba.Model.ErrorResponseDTO(error = "unknown", mensaje = s)
+        }
     } catch (_: Exception) { null }
 }

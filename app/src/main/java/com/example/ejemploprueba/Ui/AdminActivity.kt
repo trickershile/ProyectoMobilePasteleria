@@ -14,6 +14,11 @@ class AdminActivity : AppCompatActivity() {
         binding = ActivityAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupButtons()
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
         setSupportActionBar(binding.toolbar)
         val toggle = ActionBarDrawerToggle(
             this,
@@ -25,8 +30,6 @@ class AdminActivity : AppCompatActivity() {
         binding.drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
         setupDrawerMenu()
-
-        setupButtons()
     }
 
     private fun setupButtons() {
@@ -97,4 +100,5 @@ class AdminActivity : AppCompatActivity() {
             true
         }
     }
+
 }

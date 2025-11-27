@@ -17,10 +17,12 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".Ui.EditProductActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".Ui.AdminUsuariosActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".Ui.AdminOrdenesActivity"
             android:exported="false" />
@@ -44,7 +46,8 @@
             android:exported="false" />
         <activity
             android:name=".Ui.AddProductActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".Ui.AdminCategoriasActivity"
             android:exported="false" />
@@ -65,7 +68,8 @@
             android:exported="false" />
         <activity
             android:name=".Ui.RegisterActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".Ui.SplashActivity"
             android:exported="true">

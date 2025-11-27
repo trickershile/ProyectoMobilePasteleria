@@ -85,6 +85,8 @@ class AdminPagosActivity : AppCompatActivity() {
         binding.rvPagos.apply {
             adapter = this@AdminPagosActivity.adapter
             layoutManager = LinearLayoutManager(this@AdminPagosActivity)
+            setHasFixedSize(true)
+            setItemViewCacheSize(10)
         }
     }
 

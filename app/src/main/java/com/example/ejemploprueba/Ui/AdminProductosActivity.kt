@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ejemploprueba.API.RetrofitClient
 import com.example.ejemploprueba.Model.Producto
 import com.example.ejemploprueba.Model.ProductoResponseDTO
+import com.example.ejemploprueba.Model.toLocal
 import com.example.ejemploprueba.databinding.ActivityAdminProductosBinding
 import com.example.ejemploprueba.utils.SessionManager
 import kotlinx.coroutines.launch
@@ -97,17 +98,7 @@ class AdminProductosActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val productosRemotos = response.body() ?: emptyList()
-                    val productos = productosRemotos.map {
-                        Producto(
-                            id = it.id,
-                            nombre = it.nombre,
-                            descripcion = it.descripcion,
-                            precio = it.precio,
-                            stock = it.stock ?: 0,
-                            categoria = it.categoria ?: "",
-                            imagen = it.imagen ?: ""
-                        )
-                    }
+                    val productos = productosRemotos.map { it.toLocal() }
                     productosAll = productos
 
                     if (productos.isEmpty()) {
@@ -155,7 +146,7 @@ class AdminProductosActivity : AppCompatActivity() {
                             precio = it.precio,
                             stock = it.stock ?: 0,
                             categoria = it.categoria ?: "",
-                            imagen = it.imagen ?: ""
+                            imagen = (it.urlImagen ?: it.imagen) ?: ""
                         )
                     }
                     adapter.submitList(productos)

@@ -143,22 +143,35 @@ class CarritoActivity : AppCompatActivity() {
                 val token = sessionManager.getToken() ?: ""
                 val response = if (token.isNotBlank()) RetrofitClient.instance.getCarrito("Bearer $token") else null
                 if (response != null && response.isSuccessful && response.body() != null) {
-                    isLocalCart = false
-                    carritoActual = response.body()
-                    val items = carritoActual?.items ?: emptyList()
-                    val total = carritoActual?.total ?: "$0.00"
-                    renderCarrito(items, total)
+                    val remoto = response.body()!!
+                    val localItems = carritoManager.getItems()
+                    android.util.Log.i("CarritoActivity", "cargarCarrito remoto.items=${remoto.items.size} local.items=${localItems.size} token.present=${token.isNotBlank()}")
+                    if (remoto.items.isNullOrEmpty() && localItems.isNotEmpty()) {
+                        isLocalCart = true
+                        val total = String.format("$%.2f", carritoManager.getTotal())
+                        renderCarrito(localItems, total)
+                        android.util.Log.i("CarritoActivity", "Usando carrito local por remoto vacío")
+                    } else {
+                        isLocalCart = false
+                        carritoActual = remoto
+                        val items = remoto.items ?: emptyList()
+                        val total = remoto.total ?: "$0.00"
+                        renderCarrito(items, total)
+                        android.util.Log.i("CarritoActivity", "Usando carrito remoto con ${items.size} items")
+                    }
                 } else {
                     isLocalCart = true
                     val items = carritoManager.getItems()
                     val total = String.format("$%.2f", carritoManager.getTotal())
                     renderCarrito(items, total)
+                    android.util.Log.i("CarritoActivity", "Fallo remoto o sin token; usando local items=${items.size}")
                 }
             } catch (e: Exception) {
                 isLocalCart = true
                 val items = carritoManager.getItems()
                 val total = String.format("$%.2f", carritoManager.getTotal())
                 renderCarrito(items, total)
+                android.util.Log.e("CarritoActivity", "Excepción al cargar carrito", e)
             } finally {
                 showLoading(false)
             }

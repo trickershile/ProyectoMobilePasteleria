@@ -22,11 +22,12 @@ class BannerAdapter : RecyclerView.Adapter<BannerAdapter.ViewHolder>() {
     class ViewHolder(private val binding: ItemBannerBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: PromoBanner) {
             binding.tvBannerText.text = item.text
-            if (item.imageUrl.isNullOrBlank()) {
-                binding.ivBanner.setImageResource(android.R.color.transparent)
-            } else {
-                Glide.with(itemView.context).load(item.imageUrl).into(binding.ivBanner)
-            }
+            val safe = item.imageUrl?.takeIf { it.isNotBlank() }
+            Glide.with(itemView.context)
+                .load(safe ?: android.R.drawable.ic_menu_report_image)
+                .placeholder(android.R.drawable.ic_menu_report_image)
+                .error(android.R.drawable.ic_menu_report_image)
+                .into(binding.ivBanner)
         }
     }
 }

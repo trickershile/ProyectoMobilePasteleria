@@ -34,7 +34,8 @@ data class AuthResponseDTO(
 
 data class UsuarioCreadoDTO(
     val id: Int,
-    val email: String
+    val email: String,
+    val mensajePassword: String? = null
 )
 
 // Carrito
@@ -122,15 +123,15 @@ fun ProductoResponseDTO.toLocal(): Producto =
         precio = precio,
         stock = stock ?: 0,
         categoria = categoria ?: "",
-        imagen = imagen ?: ""
+        imagen = (urlImagen ?: imagen) ?: ""
     )
 
 data class ProductoRequestDTO(
     val nombre: String,
     val descripcion: String,
     val precio: String,
+    val cantidadInicial: Int,
     val categoriaId: Int? = null,
-    val stock: Int? = null,
     val urlImagen: String? = null
 )
 data class ProductoUpdateRequestDTO(
@@ -138,7 +139,26 @@ data class ProductoUpdateRequestDTO(
     val descripcion: String? = null,
     val precio: String? = null,
     val categoriaId: Int? = null,
-    val stock: Int? = null
+    val stock: Int? = null,
+    val urlImagen: String? = null
+)
+
+data class UsuarioAdminCreateDTO(
+    val email: String,
+    val nombre: String? = null,
+    val apellido: String? = null,
+    val rol: String? = null,
+    val password: String? = null
+)
+
+data class UsuarioAdminUpdateDTO(
+    val nombre: String? = null,
+    val apellido: String? = null,
+    val email: String? = null,
+    val rol: String? = null,
+    val activo: Boolean? = null,
+    val bloqueado: Boolean? = null,
+    val password: String? = null
 )
 
 data class CategoriaResponseDTO(
@@ -286,3 +306,4 @@ data class PageDTO<T>(
     val number: Int,
     val size: Int
 )
+

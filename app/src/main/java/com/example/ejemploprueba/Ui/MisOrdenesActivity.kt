@@ -52,6 +52,7 @@ class MisOrdenesActivity : AppCompatActivity() {
                     val ordenes = response.body() ?: emptyList()
 
                     if (ordenes.isEmpty()) {
+                        binding.tvEmpty.text = "No hay pedidos"
                         binding.tvEmpty.visibility = View.VISIBLE
                         binding.rvOrdenes.visibility = View.GONE
                     } else {

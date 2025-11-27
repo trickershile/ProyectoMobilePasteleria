@@ -42,6 +42,8 @@ class AdminCategoriasActivity : AppCompatActivity() {
         binding.rvCategorias.apply {
             adapter = this@AdminCategoriasActivity.adapter
             layoutManager = LinearLayoutManager(this@AdminCategoriasActivity)
+            setHasFixedSize(true)
+            setItemViewCacheSize(10)
         }
     }
 

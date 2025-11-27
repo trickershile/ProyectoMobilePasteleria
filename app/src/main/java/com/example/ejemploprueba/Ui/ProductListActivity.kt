@@ -136,7 +136,8 @@ class ProductListActivity : AppCompatActivity() {
         val root = binding.root as android.view.ViewGroup
         val temp = android.widget.ImageView(this)
         temp.layoutParams = android.view.ViewGroup.LayoutParams(source.width, source.height)
-        try { com.bumptech.glide.Glide.with(this).load(imageUrl).into(temp) } catch (_: Exception) {}
+        val src = imageUrl.takeIf { it.isNotBlank() && isLoadableImage(it) } ?: android.R.drawable.ic_menu_report_image
+        try { com.bumptech.glide.Glide.with(this).load(src).into(temp) } catch (_: Exception) {}
         val srcLoc = IntArray(2)
         val dstLoc = IntArray(2)
         source.getLocationOnScreen(srcLoc)
@@ -159,6 +160,14 @@ class ProductListActivity : AppCompatActivity() {
         set.start()
     }
 
+    private fun isLoadableImage(s: String): Boolean {
+        val lower = s.lowercase()
+        if (lower.startsWith("data:")) return false
+        if (lower.startsWith("http://") || lower.startsWith("https://")) return true
+        if (lower.startsWith("file://") || lower.startsWith("content://")) return true
+        return false
+    }
+
     private fun mostrarMenu() {
         val items = arrayOf("Ir al carrito", "Ajustes de la cuenta", "Contactar al negocio")
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
@@ -173,6 +182,7 @@ class ProductListActivity : AppCompatActivity() {
             .create()
         dialog.show()
     }
+
 
     private fun setupToolbarMenu() {
         val menu: Menu = binding.toolbar.menu
@@ -291,8 +301,10 @@ class ProductListActivity : AppCompatActivity() {
                 val token = sessionManager.getToken() ?: ""
                 val response = if (token.isNotBlank()) RetrofitClient.instance.getCarrito("Bearer $token") else null
                 if (response != null && response.isSuccessful && response.body() != null) {
-                    val items = response.body()!!.items
-                    val cantidad = items.sumOf { it.cantidad }
+                    val remoto = response.body()!!
+                    val localCantidad = carritoManager.getCantidadTotal()
+                    val cantidadRemota = remoto.items.sumOf { it.cantidad }
+                    val cantidad = if (cantidadRemota == 0 && localCantidad > 0) localCantidad else cantidadRemota
                     binding.tvCarritoBadge.text = cantidad.toString()
                     binding.tvCarritoBadge.visibility = if (cantidad > 0) View.VISIBLE else View.GONE
                 } else {
@@ -343,6 +355,7 @@ class ProductListActivity : AppCompatActivity() {
                     }
                 }
                 if (response.isSuccessful) {
+                    android.util.Log.i("ProductListActivity", "Agregar remoto OK productoId=${producto.id}")
                     android.util.Log.i("ProductListActivity", "Agregar carrito OK")
                     updateCarritoBadge()
                     com.google.android.material.snackbar.Snackbar.make(binding.root, "${producto.nombre} agregado", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
@@ -360,6 +373,7 @@ class ProductListActivity : AppCompatActivity() {
                         imagen = producto.imagen
                     )
                     carritoManager.agregarProducto(item)
+                    android.util.Log.i("ProductListActivity", "Agregar local fallback productoId=${producto.id}")
                     updateCarritoBadge()
                     com.google.android.material.snackbar.Snackbar.make(binding.root, "${producto.nombre} agregado", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
                         .setAction("Ver") { startActivity(Intent(this@ProductListActivity, CarritoActivity::class.java)) }
@@ -376,6 +390,7 @@ class ProductListActivity : AppCompatActivity() {
                     imagen = producto.imagen
                 )
                 carritoManager.agregarProducto(item)
+                android.util.Log.i("ProductListActivity", "Agregar local por excepción productoId=${producto.id}")
                 updateCarritoBadge()
                 com.google.android.material.snackbar.Snackbar.make(binding.root, "${producto.nombre} agregado", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
                     .setAction("Ver") { startActivity(Intent(this@ProductListActivity, CarritoActivity::class.java)) }
